@@ -1,0 +1,31 @@
+     RA        Dec        V    B-V   Type      Name        Name
+   24.42836 -57.23665    0.46 -0.16  B3Vpe     Alp_Eri     Achernar
+   37.94921  89.26404    2.02  0.60  F7:Ib     1Alp_UMi    Polaris
+   51.08065  49.86119    1.79  0.48  F5Ib      33Alp_Per   Mirfak
+   68.98017  16.50920    0.85  1.54  K5+III    87Alp_Tau   Aldebaran
+   78.63445  -8.20166    0.12 -0.03  B8Ia:     19Bet_Ori   Rigel
+   79.17243  45.99793    0.08  0.80  G5III     13Alp_Aur   Capella
+   88.79286   7.40708    0.50  1.85  M1Ia      58Alp_Ori   Betelgeuse
+   95.98789 -52.69565   -0.72  0.15  F0II      Alp_Car     Canopus (under Orion)
+  101.28700 -16.71574   -1.46  0.00  A1Vm      9Alp_CMa    Sirius
+  104.65646 -28.97213    1.50 -0.21  B2II      21Eps_CMa   Adhara (r foot)
+  113.64997  31.88853    1.98  0.03  A1V       66Alp_Gem   Castor
+  114.82523   5.22496    0.38  0.42  F5IV-V    10Alp_CMi   Procyon
+  116.32883  28.02613    1.14  1.00  K0IIIb    78Bet_Gem   Pollux
+  141.89687  -8.65859    1.98  1.44  K3II-III  30Alp_Hya   Alphard (S tail Hya)
+  152.09291  11.96719    1.35 -0.11  B7V       32Alp_Leo   Regulus
+  165.93221  61.75104    1.79  1.07  K0IIIa    50Alp_UMa   Dubhe (UMa pointer)
+  177.26526  14.57216    2.14  0.09  A3V       94Bet_Leo   Denebola (Leo tail)
+  187.79141 -57.11319    1.63  1.59  M3.5III   Gam_Cru     Gacrux (top S cross)
+  188.59683 -23.39672    2.65  0.89  G5II      9Bet_Crv    Beta-crv (east)
+  201.29829 -11.16124    0.98 -0.23  B1III     67Alp_Vir   Spica
+  206.88536  49.31328    1.86 -0.19  B3V       85Eta_UMa   Alkaid (UMa tail)
+  213.91533  19.18219   -0.04  1.23  K1.5III   16Alp_Boo   Arcturus
+  219.89970 -60.83527   -0.01  0.71  G2V       Alp1Cen     Alpha-cen
+  222.71973 -16.04175    2.75  0.15  A3IV       9Alp2Lib   Zubenalgenubi (W)
+  247.35187 -26.43194    0.96  1.83  M1.5Iab   21Alp_Sco   Antares
+  276.04306 -34.38450    1.85 -0.03  B9.5III   20Eps_Sgr   Eps-sgr (r foot)
+  279.23471  38.78369    0.03  0.00  A0Va      3Alp_Lyr    Vega
+  297.69577   8.86834    0.77  0.22  A7V       53Alp_Aql   Altair
+  310.35800  45.28032    1.25  0.09  A2Ia      50Alp_Cyg   Deneb
+  344.41257 -29.62205    1.16  0.09  A3V       24Alp_PsA   Fomalhaut

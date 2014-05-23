@@ -1,0 +1,331 @@
+.nf
+NAME:
+	fisheye - fit fisheye positions to angle on sky (or evaluate map)
+
+SYNOPSIS:
+	fisheye infile [options]
+
+DESCRIPTION: 
+	Fisheye determines or evaluates a mapping between x,y
+	coordinates of an image taken with a fisheye lens and RA or HA
+	and Dec of stars on the sky.  The input file consists of image
+	x,y and HA,Dec positions of stars.  (In the case of "-sky2xy"
+	evaluation the input file only includes HA, Dec.)
+
+FISHEYE LENSES:
+	A fisheye lens approximately maps angle around the sphere to
+	radius on a detector, i.e. r ~ theta, where r is the radius
+	from the center of the image and theta is the spherical angle
+	from the optical axis of the lens.  This mapping is accurate
+	at the few percent level (about 25 pixels or 2 deg for for the
+	Canon 8-15mm fisheye zoom on a Canon 5D3 body).  A quadratic
+	refinement improves this by about a factor of 10 (to about 2.5
+	pixels or 10 arcmin), and a further cubic refinement improves
+	it by another factor of 10 (about 0.2 pixels or 1 arcmin, the
+	limit of the ability to centroid stars).
+
+MAPS:
+	A mapping from sky to fisheye image involves specification of
+	the optical axis (the pole) on the sky and on the detector,
+	the azimuthal orientation of the detector around this pole, a
+	plate scale, and quadratic and cubic correction factors.  The
+	optical axis on the detector is near the center, so a first
+	approximation to the map requires the pole coordinates on the
+	sky, the azimuth, and the plate scale.
+
+	The mapping that fisheye uses to convert HA, Dec to the
+	spherical coordinates of the fisheye view involves a rotation
+	around z to bring the fisheye pole to the x axis, a rotation
+	around y to raise the pole to the z axis, and then a rotation
+	around z to bring north to the x axis.
+
+	There is also the parity issue.  Fisheye images are typically
+	oriented as one views the scene, but the sky coordinates may
+	have the same or opposite parity.  For example, coordinates of
+	hour angle (HA) and declination (Dec) have the same parity as
+	one views the sky (when Dec is up HA increases to the right),
+	but coordinates of right ascension (RA) and Dec have the
+	opposite parity.  Fisheye can deal with both parities, but it
+	does have to be specified.
+
+	This man page will refer to HA hereafter with the
+	understanding that the parity is +1, but fisheye also works
+	with RA, provided the parity is specified as -1.  The way that
+	fisheye deals with negative parity is simple: ingested RA are
+	multiplied by -1 to create internally a positive parity.  All
+	outputs have the sign of the internal HA flipped, and the text
+	"HA" is replaced with "RA".  (Hint: make it easy on yourself
+	and never use RA.  If by any chance you have a detector that
+	has the opposite parity from HA, use RA or -HA=RA-LST as your
+	sky coordinate and specify "-ha".)
+
+	Note that Greenwich Mean Sidereal Time (GMST) [deg] can be
+	calculated from Modified Julian Date (MJD) [day] as
+
+	   GMST = 280.460618 + 360.985647366*(MJD-51544.5) % 360
+
+	Local Sidereal Time (LST) differs from GMST by east longitude
+
+	   LST = GMST + longitude
+
+	and that MJD can be obtained from Unix time by
+
+	   MJD = date -u "+%s" | awk '{printf "%.5f\n",$1/86400+40587}'
+
+MODES:
+	Fisheye can operate in three different modes.
+
+	 1) Bootstrap.  Fisheye reads a (small) file of matched
+	    x,y,HA,Dec coordinates and estimates the pole, azimuth,
+	    scale, and parity by projecting all the triangle
+	    combinations onto the sphere.  Since there are (N 3)
+	    combinations it is not a good idea to use more than a few
+	    dozen points (3 suffices), and well chosen stars that
+	    surround the center but are not too close to the edge are
+	    particularly useful.  Fisheye writes its estimate of the
+	    pole, azimuth, scale, and parity.
+
+	    Bootstrap mode is invoked when the command line does not
+	    provide one or more of the basic parameters HA, Dec,
+	    azimuth, and scale.  Note that bootstrap mode does need to
+	    know the image center, cx and cy, so if the defaults of
+	    cx=1408 and cy=938 are not appropriate, set them on the
+	    command line.
+
+	 2) Fit.  Fisheye performs a non-linear least squares fit for
+	    map parameters based on initial values for HA ("-ha"), Dec
+	    ("-dec"), azimuth ("-az"), and scale ("-scale") provided
+	    on the command line, working to minimize the angle on the
+	    sky between data HA,Dec coordinates and the mapping of
+	    data x,y.
+
+	 3) Evaluation.  Fisheye simply evaluates a mapping on a set
+	    of x,y coordinates (-xy2sky) and writes the corresponding
+	    HA,Dec, or else evaluates the inverse mapping on a set of
+	    HA,Dec coordinates (-sky2xy) and writes x,y.  In both
+	    cases fisheye writes all four coordinates: x,y, HA,Dec.
+
+FITS:
+	When fisheye performs a full-up fit, it starts with initial
+	values for HA, Dec, azimuth, and scale provided on the command
+	line, initial values for image center cx and cy (defaults
+	1408, 938 are overridden by the command line), and possibly
+	values for the quadratic and cubic scale correction terms.
+	The default for these correction terms is zero, and if zero
+	fisheye does not attempt to fit for them.  Providing a
+	non-zero value on the command line signals to fisheye that it
+	should do a fit.
+
+	If requested, fisheye will write information about each star
+	to an output file.  The first line has the fit parameters,
+	"<dth>" that lists the RMS sky angle between data and model
+	followed by the median sky angle, the number of points, and
+	the number of iterations (400 means that the fit never
+	completely converged).  Subsequent lines provide for each
+	star:
+
+	  x,y            star image locations as given
+	  HA,Dec         [deg] star sky coordinates as given
+	  HAcalc,Decalc  [deg] star image locations mapped to sky
+	  dAngle         [deg] sky angle between given and map
+	  Azi,Alt        [deg] azimuth and altitude of star in the sky
+	  ompix          [arcsec^2/pix] solid angle per pixel at that location
+	  xcalc,ycalc    star sky locations mapped to image
+	  r              radius from image center to star
+	  theta          [rad] angle between pole of optical axis and star
+	  <dx>,<dy>      mean vector field of map wrt image at that location
+	  resid          offset between map and image, relative to vector field
+
+SCRIPTS:
+
+	There are two scripts that facilitate the automatic matching
+	of stars from fisheye images to catalog data, fishiter.sh and
+	fishy.sh.
+
+	The fishiter.sh script extracts stars from the Hipparcos
+	catalog to some limiting magnitude and converts their RA to HA
+	according to the MJD-OBS found in the FITS header of the
+	fisheye observation.  It maps these to image position
+	according to initial parameter estimates and then matches them
+	to the brightest stars from a tphot file according to a
+	specified tolerance.  It runs fisheye on this matched set of
+	coordinates, removes the worst outliers and then refits the
+	remaining points.  fishiter.sh and fisheye write a ".fish"
+	file as described above.  It also writes a ".mch" file that
+	summarizes the most important astrometric and photometric
+	information:
+
+	  RA,Dec,HA      [deg] star sky coordinates as given
+	  xcalc,ycalc    image position from the given sky coords (-sky2xy)
+	  BT,VT,V        star magnitudes from the Hippacos catalog
+	  (B-V),(V-I)    star colors from the Hippacos catalog
+	  m              estimate of star brightness in fisheye bandpass
+	  x,y            image position as given
+	  HAcalc,Decalc  [deg] sky coords from given image coords (-xy2sky)
+	  alt            [deg] altitude of the star in the sky
+	  r              radius of image coord from center
+	  minst,dm       instrumental magnitude and uncertainty
+	  sky            [inst mag / arcsec^2] sky brightness
+
+	The fishy.sh script tries to perform a full-up image-sky fit
+	of a given fisheye FITS file.  It takes the name of the FITS
+	file as an argument, the observatory longitude and latitude,
+	and an estimate of pointing parameters.  These pointing
+	parameters can either be in the form of "HA=ha DEC=dec AZ=az
+	SCALE=scale" or a "BOOT=bootstrap_file", where the
+	"bootstrap_file" is a (short) list of x,y,RA,Dec that have
+	been identified and matched by hand.  (Note that fishy.sh takes
+	care of converting the RA in the boostrap file to HA, using
+	MJD-OBS from the FITS header.)
+
+	If given a bootstrap file, fishy.sh first runs fisheye in
+	bootstrap mode, first determining the pointing by projecting
+	triangles and then refining the parameters by fitting the
+	points.  It then calls fishiter.sh three times, the first with
+	m<3 and N<100, the second with m<5 and N<1000, and the third
+	with m<6 and N<2000.  The desired outcome is a ".fish" and ".mch"
+	file populated with about 1000 detections and good pointing
+	parameters.  Note that for a typical 10-15mm fisheye lens the
+	<dang> residuals should be of order 0.03 to 0.04 deg (2-3 arcmin)
+	and residuals on the order of 0.5-1.0 deg for N<<1000 points
+	probably indicate a completely missed fit.
+
+OPTIONS: 
+	-in infile (default stdin "-")
+        infile
+            Input file with x, y, HA, Dec points (if requesting a fit),
+            x, y (if requesting image->sky evaluation) or HA, Dec (if
+            requesting sky->image evaluation).  HA,Dec are in degrees;
+            x,y are in pixels.  The maximum number of stars that can be
+	    fitted is 10,000.
+
+        -ha HA     [deg]
+        -ra RA     [deg]
+        -dec Dec   [deg]
+            Center of image on sky.  Specifying "-ha" sets parity=+1,
+            and specifying "-ra" sets parity=-1.  These can be overridden
+            by "-parity" later on in the argument string, but don't do it.
+
+        -az AZ     [deg]
+            Rotation of image around the pole: az=0 when north is to the left
+
+        -scale S   [deg/pix]
+            Scale of image
+
+        -cx CX     [pix]
+        -cy CY     [pix]
+            Center of image in x, y
+
+        -quad Q    [rad^-1]
+            Quadratic r(theta) term
+
+        -cube C    [rad^-2]
+            Cubic r(theta) term
+
+        -parity P  [+/-1]
+            Parity of x,y with respect to HA, Dec: +1 for HA (HA increases
+            to the right), -1 for RA (RA increases to the left).  This is
+            automatically implied and set by "-ha" and "-ra".
+
+        -out outfile
+            Write a file of parameters and fit results for each star
+
+        -lat L
+            Observation latitude for calculating altitude (default MLO +19.536)
+
+        -xy2sky
+            Evaluate x,y -> HA,Dec mapping for each star, write HA,Dec
+
+        -sky2xy
+            Evaluate HA,Dec -> x,y mapping for each star, write x,y
+
+        -verb
+        -VERB
+            Increase verbosity level one or two notches
+
+EXAMPLES:
+        Bootstrap:
+	---------------------------------------------------------
+          cat <<EOF | fisheye
+           1031.94  1196.98    18.51985  49.31328  206.88536 Alkaid
+           1451.24  1143.88    11.48987  19.18219  213.91533 Arcturus
+           1011.08   474.68   -53.82951  38.78369  279.23471 Vega
+          EOF
+
+          HA=-4.016 DEC=21.077 AZ=6.496 SCALE=0.07536 PARITY=1 MED=1.170
+
+        Note that the 5th (RA) and 6th (Name) columns are ignored, and
+        the 4th (HA) is computed as HA=LST-RA.
+
+        Bootstrap:
+	---------------------------------------------------------
+          cat <<EOF | fisheye
+           1031.94  1196.98   206.88536  49.31328   18.51985 Alkaid
+           1451.24  1143.88   213.91533  19.18219   11.48987 Arcturus
+           1011.08   474.68   279.23471  38.78369  -53.82951 Vega
+          EOF
+
+          RA=-130.578 DEC=21.077 AZ=6.496 SCALE=0.07536 PARITY=-1 MED=1.170
+
+        Note that the 5th (HA) and 6th (Name) columns are ignored, and
+        the 4th (RA) is used instead of HA.  This creates a negative
+        parity and provokes fisheye to report the result as "RA=" instead
+        of "HA=".
+
+	Multi-point bootstrap (IMG_9082.id has 10 stars including
+	those of the previous examples):
+	---------------------------------------------------------
+	  fisheye -in IMG_9082.id
+
+          HA=-4.049 DEC=21.337 AZ=6.073 SCALE=0.07434 PARITY=1 MED=1.049
+
+	Fit:
+	---------------------------------------------------------
+	  fisheye -in IMG_9082.id -ha -4.0 -dec 21.3 -az 6.1 -scale 0.073 \
+	      -out IMG_9082.fish
+
+	Evaluate HA,Dec from x,y:
+	---------------------------------------------------------
+	  awk '{print $1,$2}' IMG_9082.id | \
+	     fisheye -ha -4.0 -dec 21.3 -az 6.1 -scale 0.074 -xy2sky
+
+	Evaluate x,y from HA,Dec:
+	---------------------------------------------------------
+	  awk '{print $3,$4}' IMG_9082.id | \
+	     fisheye -ha -4.0 -dec 21.3 -az 6.1 -scale 0.074 -sky2xy
+
+	Run a complete analysis from a bootstrap file:
+	---------------------------------------------------------
+	  cat > ut030114.0170.id <<EOF
+	 1541.3  418.6   95.98789 -52.69565  Canopus
+	 1565.5 1200.2  101.28700 -16.71574  Sirius 
+	  583.2    7.2  187.79141 -57.11319  Gacrux 
+	  712.3 1346.8  141.89687  -8.65859  Alphard
+	 2064.5 1289.9   78.63445  -8.20166  Rigel  
+	 1305.7 1684.8  114.82523   5.22496  Procyon
+	EOF
+	  fishy.sh ut030114.0170.fits LNG=-70.7336 LAT=-30.2379 \
+		   BOOT=ut030114.0170.id
+
+	  HA=   0.99 Dec= -27.85 Az=  94.44 Scale= 0.04637 \
+	  quad=  0.01223 cube= -0.04571 cx= 1441.4 cy=  971.1 \
+	  <dth>= 0.064 0.039 N= 1267 lam= 3 niter= -9
+
+	Rerun the previous complete analysis using parameters:
+	---------------------------------------------------------
+	  fishy.sh ut030114.0170.fits LNG=-70.7336 LAT=-30.2379 \
+		   HA=0 DEC=-28 AZ=94 SCALE=0.046
+
+BUGS and MODIFICATIONS:
+	140413: Clean up scripts
+	140401: Add three point quick solution
+	140206: First implementation
+
+SEE ALSO:
+	fishy.sh
+	fishiter.sh
+
+AUTHORS:
+	John Tonry
+
+VERSION:
