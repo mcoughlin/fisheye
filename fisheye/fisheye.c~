@@ -90,7 +90,7 @@ int nearest(int npt, XYAD *xyad, int nneigh);
 /* Evaluate residual of this point */
 void resid(int nneigh, XYAD *xyad);
 /* heapsort */
-void heap_sort(int n, double *data, void **idx);
+void heapsort(int n, double *data, void **idx);
 void siftdown(int root, int bottom, double *data, void **idx);
 double median(int n, double *data);
 
@@ -770,7 +770,7 @@ int nearest(int npt, XYAD *xyad, int nneigh)
  	           (xyad[k].y-xyad[j].y) * (xyad[k].y-xyad[j].y);
 	 idx[j] = xyad + j;
       }
-      heap_sort(npt, dist, (void **)idx);
+      heapsort(npt, dist, (void **)idx);
       xyad[k].near = (XYAD **)calloc(nneigh, sizeof(XYAD *));
       xyad[k].dist = (double *)calloc(nneigh, sizeof(double));
       for(j=0; j<nneigh; j++) {
@@ -790,12 +790,12 @@ void resid(int nneigh, XYAD *xyad)
 
 /* Local drift in x */
    for(i=0; i<nneigh; i++) u[i] = xyad->near[i]->xmap - xyad->near[i]->x;
-   heap_sort(nneigh, u, NULL);
+   heapsort(nneigh, u, NULL);
    xyad->dxnear = 0.5*(u[nneigh/2] + u[(nneigh-1)/2]);
 
 /* Local drift in y */
    for(i=0; i<nneigh; i++) u[i] = xyad->near[i]->ymap - xyad->near[i]->y;
-   heap_sort(nneigh, u, NULL);
+   heapsort(nneigh, u, NULL);
    xyad->dynear = 0.5*(u[nneigh/2] + u[(nneigh-1)/2]);
 
 /* Offset of this point wrt local drift */
@@ -835,12 +835,12 @@ void HD_to_AZ(double ha, double dec, double lat,
 
 double median(int n, double *data)
 {
-   heap_sort(n, data, NULL);
+   heapsort(n, data, NULL);
    return(0.5*(data[(n-1)/2]+data[n/2]));
 }
  
-/* heap_sort */
-void heap_sort(int n, double *data, void **idx)
+/* heapsort */
+void heapsort(int n, double *data, void **idx)
 {
    int i;
    double temp;
