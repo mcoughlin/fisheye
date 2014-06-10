@@ -18,6 +18,8 @@ import scipy.ndimage
 import astropy
 import aplpy
 
+import healpy as hp
+
 from scipy.stats import mode
 #from scipy.interpolate import griddata
 
@@ -34,6 +36,68 @@ from matplotlib.mlab import griddata
 #                               DEFINITIONS
 #
 # =============================================================================
+
+def healpix(params):
+
+    filters = params["filters"]
+    colors = params["colors"]
+    data = {}
+
+    nside = 1024
+
+    for filter in filters:
+
+        baseplotDir = os.path.join(params["healpixpath"],filter)
+        if not os.path.isdir(baseplotDir):
+            os.mkdir(baseplotDir)
+
+        outpath = os.path.join(params["dirpathname"],filter)
+        outpath = os.path.join(params["fitspath"],filter)
+
+        files = glob.glob(os.path.join(outpath,"*.long.%s.fits"%filter))
+        files = sorted(files)
+
+        runNumbers = []
+        mjdobss = []
+        skybrightness = []
+
+        for file in files:
+
+            folderName = file.split('.')[-4]
+            runNumber = int(folderName)
+
+            if runNumber > params["maxframes"]:
+                continue
+
+            hdulist = astropy.io.fits.open(file)
+
+            npix = hp.nside2npix(nside)
+            theta, phi = hp.pix2ang(nside, np.arange(npix))
+
+            plotDir = os.path.join(baseplotDir,folderName)
+
+            #if os.path.isdir(plotDir):
+            #    continue
+
+            if not os.path.isdir(plotDir):
+                os.mkdir(plotDir)
+
+            data_flat = np.ndarray.flatten(hdulist[0].data)
+
+            plotName = os.path.join(plotDir,'mollview.png')
+            m = np.arange(hp.nside2npix(nside))
+            m[:] = 0
+            m[np.arange(0,len(data_flat))] = data_flat
+            #print m.shape
+            #print stop
+            hp.mollview(m, title=folderName)
+            plt.show()
+            plt.savefig(plotName,dpi=200)
+            plt.close('all')
+
+
+            print plotName
+    print stop
 
 def xy2sky(params):
 
@@ -131,6 +195,8 @@ def xy2sky(params):
             yi = np.linspace(-90,90,1801)
             zi = griddata(ras,decs,zz,xi,yi,interp='nn')
             zi = np.array(zi)
+
+            zi[np.isnan(zi)] = 0
 
             z_min = np.min(zi)
             z_max = np.max(zi)
@@ -337,6 +403,20 @@ def clouds(params):
             plt.savefig(plotName,dpi=200)
             plt.close('all')
 
+            plotName = os.path.join(plotDir,'sky_x_y.png')
+            plt.scatter(data_all[:,3],data_all[:,4],s=10,c=data_all[:,19],vmin=0,vmax=10,edgecolor='none')
+            plt.xlim([0,2897])
+            plt.ylim([0,1935])
+            plt.xlabel('x')
+            plt.ylabel('y')
+            plt.title(runNumber)
+            cb = plt.colorbar()
+            #cb.set_label('minst')
+            cb.set_label('sky')
+            plt.show()
+            plt.savefig(plotName,dpi=200)
+            plt.close('all')
+
             xi = np.linspace(0,2897,1000)
             yi = np.linspace(0,1935,1000)
             zi = griddata(data_all[:,3],data_all[:,4],diffs,xi,yi,interp='nn')
@@ -352,6 +432,27 @@ def clouds(params):
             contour_levels = np.arange(-2.0, 2.0, 0.1)
             plotName = os.path.join(plotDir,'contour_x_y.png')
             plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,zorder=10,vmax=2, vmin=-2)
+            #plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,zorder=10,vmax=2, vmin=-2,edgecolor='none')
+            plt.contour(xi,yi,zi,contour_levels,linewidths=0.5,colors='k')
+            plt.contourf(xi,yi,zi,contour_levels,cmap=plt.cm.rainbow)
+            #cb = plt.colorbar() # draw colorbar
+            # plot data points.
+            plt.xlim([0,2897])
+            plt.ylim([0,1935])
+            plt.title(runNumber)
+            #cb = plt.colorbar()
+            #cb.set_label('minst')
+            #cb.set_label('(minst - m) - m0')
+            plt.show()
+            plt.savefig(plotName,dpi=200)
+            plt.close('all')
+
+            zi = griddata(data_all[:,3],data_all[:,4],data_all[:,19],xi,yi,interp='nn')
+            zi = np.array(zi)
+
+            contour_levels = np.arange(0, 10.0, 0.1)
+            plotName = os.path.join(plotDir,'skycontour_x_y.png')
+            plt.scatter(data_all[:,3],data_all[:,4],s=10,c=data_all[:,19],zorder=10,vmax=10, vmin=0)
             #plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,zorder=10,vmax=2, vmin=-2,edgecolor='none')
             plt.contour(xi,yi,zi,contour_levels,linewidths=0.5,colors='k')
             plt.contourf(xi,yi,zi,contour_levels,cmap=plt.cm.rainbow)
@@ -437,6 +538,25 @@ def clouds(params):
         rm_command = "rm %s/*.png"%(moviedir)
         os.system(rm_command)
 
+        n=1
+        for folder in folders:
+            n = n + 1
+            file = os.path.join(folder,"skycontour_x_y.png")
+            filename = os.path.join(moviedir,"fishy-%04d.png"%n)
+            cp_command = "cp %s %s"%(file,filename)
+            os.system(cp_command)
+
+        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
+        filename = os.path.join(moviedir,"skycontour.mpg")
+        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
+        os.system(ffmpeg_command)
+        filename = os.path.join(moviedir,"skycontour.gif")
+        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
+        os.system(ffmpeg_command)
+
+        rm_command = "rm %s/*.png"%(moviedir)
+        os.system(rm_command)
+
 def getVariableStars():
 
     variableStars = []
@@ -465,10 +585,12 @@ def combinefisheye(params):
     colors = params["colors"]
 
     for filter in filters:
+    #for filter in []:
         #outpath = os.path.join(params["dirpathname"],filter)
         outpath = os.path.join(params["fitspath"],filter)
 
         data_all = []
+        data_all_tph = []
 
         files = glob.glob(os.path.join(outpath,"*.long.%s.fish"%filter))
         files = sorted(files)
@@ -484,10 +606,15 @@ def combinefisheye(params):
 
             fileprefix = file.replace(".fits","")
             outputfile = file.replace("fish","mch")
+            tphfile = file.replace("fish","tph")
 
             if not os.path.isfile(outputfile):
                 continue
             data_out = np.loadtxt(outputfile,comments='RA')
+
+            if not os.path.isfile(tphfile):
+                continue
+            data_out_tph = np.loadtxt(tphfile)
 
             runNumbers.append(runNumber)
             nstars.append(len(data_out))
@@ -500,8 +627,10 @@ def combinefisheye(params):
 
             if len(data_all) == 0:
                 data_all = data_out
+                data_all_tph = data_out_tph
             else:
                 data_all = np.vstack((data_all,data_out))
+                data_all_tph = np.vstack((data_all_tph,data_out_tph))
 
             #if len(data_out) < 2000:
             #    print file
@@ -554,6 +683,54 @@ def combinefisheye(params):
         data_all_cut = data_all[indexes,:]
         magnitudes_cut = magnitudes[indexes]
 
+        radecdiff = np.sqrt((data_all[:,0] - data_all_cut[0,0])**2 + (data_all[:,1] - data_all_cut[0,1])**2)
+        ar,return_index,return_inverse = np.unique(radecdiff,return_index=True, return_inverse=True)
+
+        #indexes = np.where(return_inverse != mode(return_inverse)[0])[0]
+        #indexes = np.where(return_inverse != return_inverse[0])[0]
+        indexes = np.where(radecdiff != 0)[0]
+        data_all_cut_2 = data_all[indexes,:]
+        magnitudes_cut_2 = magnitudes[indexes]  
+        ar,return_index,return_inverse = np.unique(data_all_cut_2[:,0],return_index=True, return_inverse=True)
+        indexes = np.where(return_inverse == mode(return_inverse)[0])[0] 
+        data_all_cut_2 = data_all_cut_2[indexes,:]
+        magnitudes_cut_2 = magnitudes_cut_2[indexes]
+
+        #indexes = np.where(return_inverse == index_2)[0]
+        #print indexes
+
+        #data_all_cut_2 = data_all[indexes,:]
+        #magnitudes_cut_2 = magnitudes[indexes]
+
+        xerror = data_all_cut[:,3] - data_all_cut[:,11] 
+        yerror = data_all_cut[:,4] - data_all_cut[:,12]
+        rerror = np.sqrt(xerror**2 + yerror**2)
+
+        plotName = os.path.join(plotDir,'mag_xerror_max.png')
+        plt.plot(xerror,magnitudes_cut,'*')
+        plt.xlabel('x error')
+        plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'mag_xerror_max.png')
+        plt.plot(yerror,magnitudes_cut,'*')
+        plt.xlabel('y error')
+        plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'mag_rerror_max.png')
+        plt.plot(rerror,magnitudes_cut,'*')
+        plt.xlim([0,2])
+        plt.xlabel('r error')
+        plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
         plotName = os.path.join(plotDir,'mag_x_y_max.png')
         plt.scatter(data_all_cut[:,11],data_all_cut[:,12],s=10,c=magnitudes_cut,edgecolor='none')
         plt.xlabel('x')
@@ -564,10 +741,96 @@ def combinefisheye(params):
         plt.savefig(plotName,dpi=200)
         plt.close('all')
 
+        plotName = os.path.join(plotDir,'mag_sky.png')
+        plt.plot(data_all[:,19],magnitudes,'*')
+        plt.xlabel('sky')
+        plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
         plotName = os.path.join(plotDir,'mag_time.png')
+        plt.plot(data_all[:,21],magnitudes,'*')
+        plt.xlabel('run numbers')
+        plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'mag_time_max.png')
         plt.plot(data_all_cut[:,21],magnitudes_cut,'*')
         plt.xlabel('run numbers')
         plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'mag_sky_max.png')
+        plt.plot(data_all_cut[:,19],magnitudes_cut,'*')
+        plt.xlabel('sky')
+        plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'mag_time_max_2.png')
+        plt.plot(data_all_cut[:,21],magnitudes_cut,'b*')
+        plt.plot(data_all_cut_2[:,21],magnitudes_cut_2,'r*')
+        plt.xlabel('run numbers')
+        plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'flux_chin.png')
+        plt.semilogx(data_all_tph[:,7],data_all_tph[:,-1],'*')
+        plt.xlabel('flux')
+        plt.ylabel('chi/n')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'flux_major.png')
+        plt.semilogx(data_all_tph[:,7],data_all_tph[:,9],'*')
+        plt.xlabel('flux')
+        plt.ylabel('major')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'flux_minor.png')
+        plt.semilogx(data_all_tph[:,7],data_all_tph[:,10],'*')
+        plt.xlabel('flux')
+        plt.ylabel('minor')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'major_minor.png')
+        plt.scatter(data_all_tph[:,9],data_all_tph[:,10],s=10,c=np.log10(data_all_tph[:,7]),edgecolor='none',vmin=2,vmax=5)
+        #plt.plot(data_all_tph[:,9],data_all_tph[:,10],'*')
+        plt.xlabel('major')
+        plt.ylabel('minor')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'major_skyval.png')
+        ax = plt.gca()
+        plt.scatter(data_all_tph[:,9],data_all_tph[:,4],s=10,c=np.log10(data_all_tph[:,7]),edgecolor='none',vmin=2,vmax=5)
+        #plt.plot(data_all_tph[:,9],data_all_tph[:,10],'*')
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        plt.xlabel('major')
+        plt.ylabel('skyval')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'flux_skyfit.png')
+        plt.loglog(data_all_tph[:,7],data_all_tph[:,6],'*')
+        plt.xlabel('flux')
+        plt.ylabel('skyfit')
         plt.show()
         plt.savefig(plotName,dpi=200)
         plt.close('all')
@@ -593,6 +856,15 @@ def combinefisheye(params):
         plt.ylabel('minst - m')
         title_text = "minst - m at r=0: %.5f"%r_at_0
         plt.title(title_text)
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'mag_dm_max.png')
+        #plt.semilogx(data_all_cut[:,16],data_all_cut[:,17]+data_all_cut[:,20],'*')
+        plt.plot(data_all_cut[:,18],magnitudes_cut,'*')
+        plt.xlabel('dm')
+        plt.ylabel('minst - m')
         plt.show()
         plt.savefig(plotName,dpi=200)
         plt.close('all')
@@ -740,6 +1012,8 @@ def combinefisheye(params):
 
             fid.write("%.5f %.5f %.10e\n"%(data_all_cut[0,0],data_all_cut[0,1],p))
 
+        fid.close()
+
         plt.xlabel('secant')
         plt.ylabel('minst')
         #plt.xlim([1,3])
@@ -755,32 +1029,52 @@ def combinefisheye(params):
 
             magsDir = os.path.join(params["fisheyeplotpath"],filter1)
             filename = os.path.join(magsDir,"mags.txt")
+
+            if not os.path.isfile(filename):
+                continue
+
             mags_data_1 = np.loadtxt(filename)
+
+            if len(mags_data_1) == 0:
+                continue
 
             magsDir = os.path.join(params["fisheyeplotpath"],filter2)
             filename = os.path.join(magsDir,"mags.txt")
+
+            if not os.path.isfile(filename):
+                continue
+
             mags_data_2 = np.loadtxt(filename)
+
+            if len(mags_data_2) == 0:
+                continue
 
             data1 = []
             data2 = []
 
             for i in xrange(len(mags_data_1)):
 
-                ra = data_all[i,0]
-                dec = data_all[i,1]
+                ra = mags_data_1[i,0]
+                dec = mags_data_1[i,1]
                 index1 = np.where(ra == mags_data_2[:,0])[0]
                 index2 = np.where(dec == mags_data_2[:,1])[0]
 
-                index = index1
+                if len(index1) == 0:
+                    continue
 
-                if not len(mags_data[index,2]) == 0:
-                    data1.append(mags_data_1[i,2])
-                    data2.append(mags_data_2[index,2])
+                index = index1[0]
+
+                #if not len(mags_data_2[index,2]) == 0:
+ 
+                data1.append(mags_data_1[i,2])
+                data2.append(mags_data_2[index,2])
 
             plotName = os.path.join(plotDir,'%s_%s.png'%(filter1,filter2))
             plt.plot(data1,data2,'*')
             plt.xlabel(filter1)
             plt.ylabel(filter2)
+            plt.xlim([13,15])
+            plt.ylim([13,15])
             plt.show()
             plt.savefig(plotName,dpi=200)
             plt.close('all')
@@ -789,6 +1083,7 @@ def skybrightness(params):
 
     filters = params["filters"]
     colors = params["colors"]
+    data = {}
 
     for filter in filters:
         outpath = os.path.join(params["dirpathname"],filter)
@@ -798,6 +1093,7 @@ def skybrightness(params):
         files = sorted(files)
 
         runNumbers = []
+        mjdobss = []
         skybrightness = []
 
         for file in files:
@@ -820,6 +1116,8 @@ def skybrightness(params):
                     bias=float(lineSplit[2])
                 elif lineSplit[0] == "EXPTIME":
                     exptime=float(lineSplit[2])
+                elif lineSplit[0] == "MJD-OBS":
+                    mjdobs=float(lineSplit[2])
 
             hdulist = astropy.io.fits.open(file)
             scidata = hdulist[0].data
@@ -828,6 +1126,7 @@ def skybrightness(params):
             skyval = (im[1450,968]-bias)/exptime
             runNumbers.append(runNumber)
             skybrightness.append(skyval)
+            mjdobss.append(mjdobs)
 
         plotDir = os.path.join(params["skybrightnessplotpath"],filter)
         if not os.path.isdir(plotDir):
@@ -841,6 +1140,20 @@ def skybrightness(params):
         plt.show()
         plt.savefig(plotName,dpi=200)
         plt.close('all')
+
+        f = open(os.path.join(plotDir,'skybrightness.txt'),'w')
+        for mjdobs,sky in zip(mjdobss,skybrightness):
+            f.write("%.10f %.10e\n"%(mjdobs,sky))
+        f.close()
+
+        data[filter] = {}
+        data[filter]["mjdobs"] = mjdobss
+        data[filter]["skybrightness"] = skybrightness
+
+    f = open(os.path.join(params["skybrightnessplotpath"],'skybrightness.txt'),'w')
+    for mjdobs,m,r,g,b in zip(data["M"]["mjdobs"],data["M"]["skybrightness"],data["R"]["skybrightness"],data["G"]["skybrightness"],data["B"]["skybrightness"]):
+        f.write("%.10f %.10e %.10e %.10e %.10e\n"%(mjdobs,m,r,g,b))
+    f.close()
 
 def fisheye(params):
 

@@ -10,7 +10,7 @@ This program analyzes data from the nightly Cerro Pachon All-Sky Camera Project 
 """
 
 import os, sys, pickle, math, optparse, glob, time, subprocess
-import fisheye
+import fisheye, photodiode
 
 # =============================================================================
 #
@@ -39,6 +39,8 @@ def parse_commandline():
     parser.add_option("--doPhotometry",  action="store_true", default=False)
     parser.add_option("--doSkyBrightness",  action="store_true", default=False)
     parser.add_option("--doXY2Sky",  action="store_true", default=False)
+    parser.add_option("--doHealpix",  action="store_true", default=False)
+    parser.add_option("--doPhotodiode",  action="store_true", default=False)
 
     opts, args = parser.parse_args()
 
@@ -49,6 +51,8 @@ def initialize(params):
     # set up directory names and data paths
     params["datadisk"]='/lsst/all-sky'
     params["fitsdisk"]='/lsst/all-sky/FITS'    
+    params["fitsdisk"]='/lsst/home/coughlin/allsky/data/FITS'
+    params["photodiodedisk"]='/lsst/home/coughlin/allsky/data/PD'
     params["dirpath"]='/lsst/home/%s/allsky/data'%params["user"]
     params["dirname"]=params["outputFolder"]
 
@@ -95,6 +99,14 @@ def initialize(params):
     params["skybrightnessplotpath"]=os.path.join(params["dirpathname"],"skybrightnessplots")
     if not os.path.isdir(params["skybrightnessplotpath"]):
         os.mkdir(params["skybrightnessplotpath"])
+
+    params["healpixpath"]=os.path.join(params["dirpathname"],"healpixplots")
+    if not os.path.isdir(params["healpixpath"]):
+        os.mkdir(params["healpixpath"])
+
+    params["photodiodepath"]=os.path.join(params["dirpathname"],"photodiodeplots")
+    if not os.path.isdir(params["photodiodepath"]):
+        os.mkdir(params["photodiodepath"])
 
     # prefix for images, gets framecounter.cr2 appended
     params["imageprefix"]="%s."%params["dirname"]
@@ -148,6 +160,10 @@ if __name__=="__main__":
     params["doMakeMovie"] = opts.doMakeMovie
     # Run tphot / source extractor on the images
     params["doPhotometry"] = opts.doPhotometry
+    # Convert images to healpix maps
+    params["doHealpix"] = opts.doHealpix
+    # Retrieve photodiode data
+    params["doPhotodiode"] = opts.doPhotodiode
 
     params = initialize(params)
 
@@ -168,3 +184,8 @@ if __name__=="__main__":
         fisheye.clouds(params)
     if params["doXY2Sky"]:
         fisheye.xy2sky(params)
+    if params["doHealpix"]:
+        fisheye.healpix(params)
+    if params["doPhotodiode"]:
+        photodiode.photodiode(params)
+
