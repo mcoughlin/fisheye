@@ -41,6 +41,7 @@ def parse_commandline():
     parser.add_option("--doXY2Sky",  action="store_true", default=False)
     parser.add_option("--doHealpix",  action="store_true", default=False)
     parser.add_option("--doPhotodiode",  action="store_true", default=False)
+    parser.add_option("--doSBPD",  action="store_true", default=False)
 
     opts, args = parser.parse_args()
 
@@ -108,6 +109,10 @@ def initialize(params):
     if not os.path.isdir(params["photodiodepath"]):
         os.mkdir(params["photodiodepath"])
 
+    params["sbpdpath"]=os.path.join(params["dirpathname"],"sbpdplots")
+    if not os.path.isdir(params["sbpdpath"]):
+        os.mkdir(params["sbpdpath"])
+
     # prefix for images, gets framecounter.cr2 appended
     params["imageprefix"]="%s."%params["dirname"]
     # interval after end of last image before starting next one, in seconds
@@ -164,6 +169,8 @@ if __name__=="__main__":
     params["doHealpix"] = opts.doHealpix
     # Retrieve photodiode data
     params["doPhotodiode"] = opts.doPhotodiode
+    # Combine all-sky camera / photodiode data
+    params["doSBPD"] = opts.doSBPD
 
     params = initialize(params)
 
@@ -188,4 +195,5 @@ if __name__=="__main__":
         fisheye.healpix(params)
     if params["doPhotodiode"]:
         photodiode.photodiode(params)
-
+    if params["doSBPD"]:
+        photodiode.sbpd(params)

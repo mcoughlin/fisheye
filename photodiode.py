@@ -59,7 +59,7 @@ def photodiode(params):
     day = int(datestr[2:4]) 
     month = int(datestr[0:2])
 
-    day1 = datetime(year, month, day) - timedelta(0.5)
+    day1 = datetime(year, month, day) + timedelta(0.5)
     day2 = day1 + timedelta(1)
 
     day1mjd = Time(day1, scale='utc').mjd
@@ -127,4 +127,27 @@ def photodiode(params):
     plt.savefig(plotName,dpi=200)
     plt.close('all')
 
+
+def sbpd(params):
+
+    skybrightness_file = os.path.join(params["skybrightnessplotpath"],'skybrightness.txt')
+    pd_file = os.path.join(params["photodiodepath"],'photodiode.txt')
+
+    skybrightness_data = np.loadtxt(skybrightness_file)
+    pd_data = np.loadtxt(pd_file)
+
+    tt = skybrightness_data[:,0]
+    tt_pd = pd_data[:,0]
+    ms = skybrightness_data[:,1]
+    rs = skybrightness_data[:,2]
+    gs = skybrightness_data[:,3]
+    bs = skybrightness_data[:,4]     
+    rs_pd = np.interp(tt,tt_pd,pd_data[:,1])
+    zs_pd = np.interp(tt,tt_pd,pd_data[:,2])
+    ys_pd = np.interp(tt,tt_pd,pd_data[:,3])
+
+    f = open(os.path.join(params["sbpdpath"],'sbpd.txt'),'w')
+    for t,m,r,g,b,r_pd,z_pd,y_pd in zip(tt,ms,rs,gs,bs,rs_pd,zs_pd,ys_pd):
+        f.write("%.10f %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n"%(t,m,r,g,b,r_pd,z_pd,y_pd))
+    f.close()
 

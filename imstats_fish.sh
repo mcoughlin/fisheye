@@ -73,8 +73,8 @@ MED=1.054
 
 
 # Where can hip.dat.dat be found: $CATDIR/hip.dat (REQUIRED)
-CATDIR=/lsst/home/coughlin/allsky/bin
-PRODIR=/lsst/home/coughlin/allsky/bin
+CATDIR=/lsst/home/coughlin/git-repo/fisheye
+PRODIR=/lsst/home/coughlin/git-repo/fisheye
 
 # Other default parameters
 VERB=0
@@ -152,9 +152,15 @@ if [[ $night -eq 1 ]] ; then
 
 # tphot the image, lots o' hardwired parameters...
   TRAD=4 TSIG=2 TMIN=50 TBIAS=2048 TAPRAD=4 
+  #TAPRAD=4 SKYRAD=40
 
   tphot $obs.fits -bias $TBIAS -rad $TRAD -sig $TSIG -min $TMIN -aprad $TAPRAD -okfit 0 -chin 100000 -out ${obs}_old.tph
+
+  #tphot $obs.fits -bias $TBIAS -rad $TRAD -sig $TSIG -min $TMIN -aprad $TAPRAD -skyrad $SKYRAD -okfit 0 -chin 100000 -out ${obs}_old.tph
   #tphot $obs.fits -bias $TBIAS -rad $TRAD -sig $TSIG -min $TMIN -aprad $TAPRAD -okfit 0 -chin 100000 -out $obs.tph -nxsky 10 -nysky 10
+
+  #echo tphot $obs.fits -bias $TBIAS -rad $TRAD -sig $TSIG -min $TMIN -aprad $TAPRAD -okfit 0 -chin 100000 -out ${obs}_old.tph
+  #exit 0
 
   grep -v "#" ${obs}_old.tph | awk '{ if (($8/$9) > 10) print $0}' > ${obs}.tph
 
@@ -169,9 +175,6 @@ if [[ $night -eq 1 ]] ; then
 
 # First iteration: MLIM=3, NSTAR=100, matched fit then pruned fit:
     if [[ $VERB -gt 0 ]] ; then echo First iteration: MLIM=3, NSTAR=100 ; fi
-
-    #echo "fishiter.sh $obs CATDIR=$CATDIR MLIM=3 NSTAR=100 MCHTOL=$MCHTOL1 HA=$HA DEC=$DEC AZ=$AZ SCALE=$SCALE LNG=$LNG LAT=$LAT FRAT=$frat CLEAN=$CLEAN VERB=$VERB"
-    #exit 0
 
     fishiter.sh $obs CATDIR=$CATDIR MLIM=3 NSTAR=100 MCHTOL=$MCHTOL1 HA=$HA DEC=$DEC AZ=$AZ SCALE=$SCALE LNG=$LNG LAT=$LAT FRAT=$frat CLEAN=$CLEAN VERB=$VERB
 

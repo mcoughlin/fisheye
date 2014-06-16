@@ -27,6 +27,7 @@ import matplotlib
 #matplotlib.rc('text', usetex=True)
 matplotlib.use('Agg')
 matplotlib.rcParams.update({'font.size': 16})
+matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
 import matplotlib.pyplot as plt
 
 from matplotlib.mlab import griddata
@@ -43,7 +44,8 @@ def healpix(params):
     colors = params["colors"]
     data = {}
 
-    nside = 1024
+    nside = 512
+    print "Pixel area: %.4f square degrees" % hp.nside2pixarea(nside, degrees=True)
 
     for filter in filters:
 
@@ -83,21 +85,76 @@ def healpix(params):
                 os.mkdir(plotDir)
 
             data_flat = np.ndarray.flatten(hdulist[0].data)
+            image_array = hdulist[0].data
 
+            image_array = np.flipud(image_array)
+            #theta = np.linspace(0,np.pi, num=image_array.shape[0])[:, None]
+            theta = np.linspace((50.0/90.0)*np.pi/2,np.pi, num=image_array.shape[0])[:, None]
+            phi = np.linspace(-np.pi, np.pi, num=image_array.shape[1])
+            pix = hp.ang2pix(nside, theta, phi)
+            healpix_map = np.zeros(hp.nside2npix(nside), dtype=np.double)
+            healpix_map[pix] = image_array
+ 
             plotName = os.path.join(plotDir,'mollview.png')
-            m = np.arange(hp.nside2npix(nside))
-            m[:] = 0
-            m[np.arange(0,len(data_flat))] = data_flat
-            #print m.shape
-            #print stop
-            hp.mollview(m, title=folderName)
+            hp.mollview(healpix_map, min=2048, max=2100, title=folderName,xsize=2000)
             plt.show()
             plt.savefig(plotName,dpi=200)
             plt.close('all')
 
+            plotName = os.path.join(plotDir,'gnomview.png')
+            hp.gnomview(healpix_map, min=2048, max=2100, title=folderName,xsize=2000)
+            plt.show()
+            plt.savefig(plotName,dpi=200)
+            plt.close('all')
 
-            print plotName
-    print stop
+            hpfits = os.path.join(plotDir,'hpfits.fits')
+            hp.write_map(hpfits, healpix_map)
+
+            #print plotName
+            #print stop
+
+        moviedir = os.path.join(baseplotDir,"movie")
+        if not os.path.isdir(moviedir):
+            os.mkdir(moviedir)
+
+        folders = sorted(glob.glob(os.path.join(baseplotDir,'*')))
+        n=1
+        for folder in folders:
+            n = n + 1
+            file = os.path.join(folder,"mollview.png")
+            filename = os.path.join(moviedir,"fishy-%04d.png"%n)
+            cp_command = "cp %s %s"%(file,filename)
+            os.system(cp_command)
+
+        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
+        filename = os.path.join(moviedir,"mollview.mpg")
+        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
+        os.system(ffmpeg_command)
+        filename = os.path.join(moviedir,"mollview.gif")
+        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
+        os.system(ffmpeg_command)
+
+        rm_command = "rm %s/*.png"%(moviedir)
+        os.system(rm_command)
+
+        n=1
+        for folder in folders:
+            n = n + 1
+            file = os.path.join(folder,"gnomview.png")
+            filename = os.path.join(moviedir,"fishy-%04d.png"%n)
+            cp_command = "cp %s %s"%(file,filename)
+            os.system(cp_command)
+
+        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
+        filename = os.path.join(moviedir,"gnomview.mpg")
+        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
+        os.system(ffmpeg_command)
+        filename = os.path.join(moviedir,"gnomview.gif")
+        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
+        os.system(ffmpeg_command)
+
+        rm_command = "rm %s/*.png"%(moviedir)
+        os.system(rm_command)
 
 def xy2sky(params):
 
@@ -429,12 +486,26 @@ def clouds(params):
             else:
                 zi_ave = zi_ave + zi_copy
 
+            zi_ra = griddata(data_all[:,3],data_all[:,4],data_all[:,0],xi,yi,interp='nn')
+            zi_ra = np.array(zi_ra)
+            contour_levels_ra = np.arange(0, 360.0, 10)
+
+            zi_dec = griddata(data_all[:,3],data_all[:,4],data_all[:,1],xi,yi,interp='nn')
+            zi_dec = np.array(zi_dec)
+            contour_levels_dec = np.arange(-90, 90.0, 10)
+
             contour_levels = np.arange(-2.0, 2.0, 0.1)
             plotName = os.path.join(plotDir,'contour_x_y.png')
             plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,zorder=10,vmax=2, vmin=-2)
             #plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,zorder=10,vmax=2, vmin=-2,edgecolor='none')
             plt.contour(xi,yi,zi,contour_levels,linewidths=0.5,colors='k')
             plt.contourf(xi,yi,zi,contour_levels,cmap=plt.cm.rainbow)
+
+            CS_ra = plt.contour(xi,yi,zi_ra,contour_levels_ra,linewidths=0.5,colors='k')
+            plt.clabel(CS_ra, fontsize=9, inline=1)
+            CS_dec = plt.contour(xi,yi,zi_dec,contour_levels_dec,linewidths=0.5,colors='k')
+            plt.clabel(CS_dec, fontsize=9, inline=1)
+
             #cb = plt.colorbar() # draw colorbar
             # plot data points.
             plt.xlim([0,2897])
@@ -468,10 +539,56 @@ def clouds(params):
             plt.savefig(plotName,dpi=200)
             plt.close('all')
 
+            zi = griddata(data_all[:,3],data_all[:,4],data_all[:,0],xi,yi,interp='nn')
+            zi = np.array(zi)
+
+            contour_levels = np.arange(0, 360.0, 5)
+            plotName = os.path.join(plotDir,'ra.png')
+            #plt.scatter(data_all[:,3],data_all[:,4],s=10,c=data_all[:,19],zorder=10,vmax=10, vmin=0)
+            #plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,zorder=10,vmax=2, vmin=-2,edgecolor='none')
+            plt.contour(xi,yi,zi,contour_levels,linewidths=0.5,colors='k')
+            plt.contourf(xi,yi,zi,contour_levels,cmap=plt.cm.rainbow)
+            #cb = plt.colorbar() # draw colorbar
+            # plot data points.
+            plt.xlim([0,2897])
+            plt.ylim([0,1935])
+            plt.title(runNumber)
+            cb = plt.colorbar()
+            #cb.set_label('minst')
+            #cb.set_label('(minst - m) - m0')
+            plt.show()
+            plt.savefig(plotName,dpi=200)
+            plt.close('all')
+
+            zi = griddata(data_all[:,3],data_all[:,4],data_all[:,1],xi,yi,interp='nn')
+            zi = np.array(zi)
+
+            contour_levels = np.arange(-90, 90.0, 5)
+            plotName = os.path.join(plotDir,'dec.png')
+            #plt.scatter(data_all[:,3],data_all[:,4],s=10,c=data_all[:,19],zorder=10,vmax=10, vmin=0)
+            #plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,zorder=10,vmax=2, vmin=-2,edgecolor='none')
+            plt.contour(xi,yi,zi,contour_levels,linewidths=0.5,colors='k')
+            plt.contourf(xi,yi,zi,contour_levels,cmap=plt.cm.rainbow)
+            #cb = plt.colorbar() # draw colorbar
+            # plot data points.
+            plt.xlim([0,2897])
+            plt.ylim([0,1935])
+            plt.title(runNumber)
+            cb = plt.colorbar()
+            #cb.set_label('minst')
+            #cb.set_label('(minst - m) - m0')
+            plt.show()
+            plt.savefig(plotName,dpi=200)
+            plt.close('all')
+
+            print plotName
+
             #p = cs.collections[0].get_paths()[0]
             #v = p.vertices
             #x = v[:,0]
             #y = v[:,1]
+
+        print stop
 
         zi_ave_norm = np.array(zi_ave) / float(len(files))
 
@@ -1176,6 +1293,8 @@ def fisheye(params):
             fileprefix = file.replace(".fits","")
 
             fisheye_command = "./imstats_fish.sh %s"%fileprefix
+            print fisheye_command
+            print stop
             os.system(fisheye_command)
 
             outputfile = file.replace("fits","fish")
