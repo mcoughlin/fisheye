@@ -1,0 +1,62 @@
+#!/bin/bash
+# Convert Canon raw CR2 or Nikon NEF files to a FITS format
+#
+# Syntax: raw2fits [options] infile.{CR2,NEF} [infile.{CR2,NEF} ...]
+#
+# where options include:
+#
+# Output color choices
+#   -bw       -g1     -g2   (monochrome or one of individual G Bayer pixels)
+#   -r        -g      -b    (R, (G1+G2)/2, or B Bayer pixel)
+#   -rgb      -rggb         (3D output with 3 or 4 planes)
+#
+# Divide output image by 2
+#   -div2
+#
+# Output directory (default is same as CR2)
+#   -dir
+#
+# Filename extensions of the form ".CR2", ".cr2", ".NEF" and ".nef" are
+# interpreted as images, else is processed as arguments to pgm2fits
+
+test=1
+
+dirt=""
+
+# Parse arguments into images or pgm2fits arguments
+args=""
+imgs=""
+while (( $# > 0 )) ; do
+  e=`echo $1 | tr . ' ' | awk '{print $NF}'`
+  if [ "$e" == "cr2" -o "$e" == "CR2" -o "$e" == "nef" -o "$e" == "NEF" ] ; then
+    imgs="$imgs $1"
+  else
+# Directory request
+    if [ "$1" == "-dir" ] ; then
+      dirt=$2
+      shift 1    
+    elif [ "$1" == "test=0" ] ; then 
+      test=0
+# Generic argument
+    else
+      args="$args $1"
+    fi
+  fi
+  shift 1
+done
+
+if [ $test -eq 1 ] ; then args="$args -test" ; fi
+
+if [ $test -eq 1 ] ; then echo args= $args ; echo imgs= $imgs ; fi
+
+for rawfile in $imgs ; do
+  if [ "$dirt" == "" ] ; then dir=`dirname $rawfile` ; else dir=$dirt ; fi
+  fname=`basename $rawfile`
+  e=`echo $fname | tr . ' ' | awk '{print $NF}'`
+  root=`basename $rawfile .$e`
+  mdcraw -i -v $rawfile > $dir/$root.meta
+  if [ $test -eq 1 ] ; then printf "%s -> %s  " $rawfile $dir/$root.fits ; fi
+  mdcraw -4 -j -c -D -t 0 $rawfile | pgm2fits $args -hdr $dir/$root.meta > $dir/$root.fits
+# I don't see any reason to keep the metadata...
+  if [ $test -eq 1 ] ; then rm $dir/$root.meta ; fi
+done
