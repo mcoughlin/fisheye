@@ -59,6 +59,20 @@ def healpix(params):
         files = glob.glob(os.path.join(outpath,"*.long.%s.fits"%filter))
         files = sorted(files)
 
+        magsDir = os.path.join(params["fisheyeplotpath"],filter)
+        filename = os.path.join(magsDir,"mags.txt")
+        mags_data = np.loadtxt(filename)
+
+        ra_min = np.min(mags_data[:,0]) * (2*np.pi/360.0)
+        ra_max = np.max(mags_data[:,0]) * (2*np.pi/360.0)
+        dec_min = np.min(mags_data[:,1]) * (2*np.pi/360.0)
+        dec_max = np.max(mags_data[:,1]) * (2*np.pi/360.0)
+
+        phi_min = ra_min
+        phi_max = ra_max
+        theta_min = 0.5*np.pi - dec_max
+        theta_max = 0.5*np.pi - dec_min
+
         runNumbers = []
         mjdobss = []
         skybrightness = []
@@ -89,8 +103,10 @@ def healpix(params):
 
             image_array = np.flipud(image_array)
             #theta = np.linspace(0,np.pi, num=image_array.shape[0])[:, None]
-            theta = np.linspace((50.0/90.0)*np.pi/2,np.pi, num=image_array.shape[0])[:, None]
-            phi = np.linspace(-np.pi, np.pi, num=image_array.shape[1])
+            #theta = np.linspace((50.0/90.0)*np.pi/2,np.pi, num=image_array.shape[0])[:, None]
+            #phi = np.linspace(-np.pi, np.pi, num=image_array.shape[1])
+            theta = np.linspace(theta_min,theta_max, num=image_array.shape[0])[:, None]
+            phi = np.linspace(phi_min, phi_max, num=image_array.shape[1])
             pix = hp.ang2pix(nside, theta, phi)
             healpix_map = np.zeros(hp.nside2npix(nside), dtype=np.double)
             healpix_map[pix] = image_array
@@ -110,7 +126,7 @@ def healpix(params):
             hpfits = os.path.join(plotDir,'hpfits.fits')
             hp.write_map(hpfits, healpix_map)
 
-            #print plotName
+            print plotName
             #print stop
 
         moviedir = os.path.join(baseplotDir,"movie")
@@ -289,6 +305,39 @@ def clouds(params):
         filename = os.path.join(magsDir,"mags.txt")
         mags_data = np.loadtxt(filename)
 
+        ra_min = np.min(mags_data[:,0]) * (2*np.pi/360.0)
+        ra_max = np.max(mags_data[:,0]) * (2*np.pi/360.0)
+        dec_min = np.min(mags_data[:,1]) * (2*np.pi/360.0)
+        dec_max = np.max(mags_data[:,1]) * (2*np.pi/360.0)
+
+        phi_min = ra_min
+        phi_max = ra_max
+        theta_min = 0.5*np.pi - dec_max
+        theta_max = 0.5*np.pi - dec_min
+
+        plotName = os.path.join(baseplotDir,'mags_hist.png')
+        bins = np.arange(10,20,0.1)
+        hist, bins = np.histogram(mags_data[:,2], bins=bins)
+        width = 0.7 * (bins[1] - bins[0])
+        center = (bins[:-1] + bins[1:]) / 2
+        plt.bar(center, hist, align='center', width=width)
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(baseplotDir,'mags_slope_hist.png')
+        bins = np.arange(-1,1,0.1)
+        hist, bins = np.histogram(mags_data[:,3], bins=bins)
+        width = 0.7 * (bins[1] - bins[0])
+        center = (bins[:-1] + bins[1:]) / 2
+        plt.bar(center, hist, align='center', width=width)
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        mags_data_slope_median = np.median(mags_data[:,3])
+        print mags_data_slope_median
+
         files = glob.glob(os.path.join(outpath,"*.long.%s.fish"%filter))
         files = sorted(files)
 
@@ -312,6 +361,9 @@ def clouds(params):
             data_out = np.loadtxt(outputfile,comments='RA')
             if len(data_out) == 0:
                 continue
+
+            #if not runNumber == 400:
+            #    continue 
 
             data_all = data_out
 
@@ -381,6 +433,9 @@ def clouds(params):
 
                 ra = data_all[i,0]
                 dec = data_all[i,1]
+                zenith = (90 - data_all[i,15]) * 2 * np.pi / 360.0
+                secant = 1/np.cos(zenith)
+
                 ha = LST - ra
                 index1 = np.where(ra == mags_data[:,0])[0]
                 index2 = np.where(dec == mags_data[:,1])[0]
@@ -390,7 +445,10 @@ def clouds(params):
                 if len(mags_data[index,2]) == 0:
                     mags.append(magnitudes[i])
                 else:
-                    mags.append(mags_data[index,2][0])
+ 
+                    mag_estimate = mags_data[index,2][0]
+                    mag_estimate = mags_data[index,2][0] + secant*mags_data_slope_median
+                    mags.append(mag_estimate)
 
             data_all_new = []
             #mags = []
@@ -446,8 +504,10 @@ def clouds(params):
             if len(diffs) < 3:
                 continue
 
+            colorRange = 2.0
+
             plotName = os.path.join(plotDir,'diff_x_y.png')
-            plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,vmin=-1,vmax=1,edgecolor='none')
+            plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,vmin=-colorRange,vmax=colorRange,edgecolor='none')
             plt.xlim([0,2897])
             plt.ylim([0,1935])
             plt.xlabel('x')
@@ -496,10 +556,10 @@ def clouds(params):
 
             contour_levels = np.arange(-2.0, 2.0, 0.1)
             plotName = os.path.join(plotDir,'contour_x_y.png')
-            plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,zorder=10,vmax=2, vmin=-2)
+            plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,zorder=10,vmax=colorRange, vmin=-colorRange)
             #plt.scatter(data_all[:,3],data_all[:,4],s=10,c=diffs,zorder=10,vmax=2, vmin=-2,edgecolor='none')
             plt.contour(xi,yi,zi,contour_levels,linewidths=0.5,colors='k')
-            plt.contourf(xi,yi,zi,contour_levels,cmap=plt.cm.rainbow)
+            plt.contourf(xi,yi,zi,contour_levels,cmap=plt.cm.rainbow,vmax=colorRange, vmin=-colorRange)
 
             CS_ra = plt.contour(xi,yi,zi_ra,contour_levels_ra,linewidths=0.5,colors='k')
             plt.clabel(CS_ra, fontsize=9, inline=1)
@@ -517,6 +577,34 @@ def clouds(params):
             plt.show()
             plt.savefig(plotName,dpi=200)
             plt.close('all')
+
+            nside = 512
+            image_array = zi
+
+            image_array = np.flipud(image_array)
+            #theta = np.linspace(0,np.pi, num=image_array.shape[0])[:, None]
+            #theta = np.linspace((50.0/90.0)*np.pi/2,np.pi, num=image_array.shape[0])[:, None]
+            #phi = np.linspace(-np.pi, np.pi, num=image_array.shape[1])
+            theta = np.linspace(theta_min,theta_max, num=image_array.shape[0])[:, None]
+            phi = np.linspace(phi_min, phi_max, num=image_array.shape[1])
+            pix = hp.ang2pix(nside, theta, phi)
+            healpix_map = np.zeros(hp.nside2npix(nside), dtype=np.double)
+            healpix_map[pix] = image_array
+
+            plotName = os.path.join(plotDir,'mollview.png')
+            hp.mollview(healpix_map, min=-colorRange, max=colorRange, title=folderName,xsize=2000)
+            plt.show()
+            plt.savefig(plotName,dpi=200)
+            plt.close('all')
+
+            plotName = os.path.join(plotDir,'gnomview.png')
+            hp.gnomview(healpix_map, min=-colorRange, max=colorRange, title=folderName,xsize=2000)
+            plt.show()
+            plt.savefig(plotName,dpi=200)
+            plt.close('all')
+
+            hpfits = os.path.join(plotDir,'hpfits.fits')
+            hp.write_map(hpfits, healpix_map)
 
             zi = griddata(data_all[:,3],data_all[:,4],data_all[:,19],xi,yi,interp='nn')
             zi = np.array(zi)
@@ -581,14 +669,10 @@ def clouds(params):
             plt.savefig(plotName,dpi=200)
             plt.close('all')
 
-            print plotName
-
             #p = cs.collections[0].get_paths()[0]
             #v = p.vertices
             #x = v[:,0]
             #y = v[:,1]
-
-        print stop
 
         zi_ave_norm = np.array(zi_ave) / float(len(files))
 
@@ -596,21 +680,22 @@ def clouds(params):
         if not os.path.isdir(plotDir):
             os.mkdir(plotDir)
 
-        contour_levels = np.arange(-1, 1, 0.1)
-        plotName = os.path.join(plotDir,'contour_x_y.png')
-        plt.contour(xi,yi,zi_ave_norm,contour_levels,linewidths=0.5,colors='k')
-        plt.contourf(xi,yi,zi_ave_norm,contour_levels,cmap=plt.cm.rainbow)
-        cb = plt.colorbar() # draw colorbar
-        # plot data points.
-        plt.xlim([0,2897])
-        plt.ylim([0,1935])
-        plt.title("average loss")
-        #cb = plt.colorbar()
-        #cb.set_label('minst')
-        #cb.set_label('(minst - m) - m0')
-        plt.show()
-        plt.savefig(plotName,dpi=200)
-        plt.close('all')
+        if True:
+            contour_levels = np.arange(-1, 1, 0.1)
+            plotName = os.path.join(plotDir,'contour_x_y.png')
+            plt.contour(xi,yi,zi_ave_norm,contour_levels,linewidths=0.5,colors='k')
+            plt.contourf(xi,yi,zi_ave_norm,contour_levels,cmap=plt.cm.rainbow)
+            cb = plt.colorbar() # draw colorbar
+            # plot data points.
+            plt.xlim([0,2897])
+            plt.ylim([0,1935])
+            plt.title("average loss")
+            #cb = plt.colorbar()
+            #cb.set_label('minst')
+            #cb.set_label('(minst - m) - m0')
+            plt.show()
+            plt.savefig(plotName,dpi=200)
+            plt.close('all')
 
         moviedir = os.path.join(baseplotDir,"movie")
         if not os.path.isdir(moviedir):
@@ -674,6 +759,25 @@ def clouds(params):
         rm_command = "rm %s/*.png"%(moviedir)
         os.system(rm_command)
 
+        n=1
+        for folder in folders:
+            n = n + 1
+            file = os.path.join(folder,"mollview.png")
+            filename = os.path.join(moviedir,"fishy-%04d.png"%n)
+            cp_command = "cp %s %s"%(file,filename)
+            os.system(cp_command)
+
+        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
+        filename = os.path.join(moviedir,"mollview.mpg")
+        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
+        os.system(ffmpeg_command)
+        filename = os.path.join(moviedir,"mollview.gif")
+        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
+        os.system(ffmpeg_command)
+
+        rm_command = "rm %s/*.png"%(moviedir)
+        os.system(rm_command)
+
 def getVariableStars():
 
     variableStars = []
@@ -710,6 +814,7 @@ def combinefisheye(params):
         data_all_tph = []
 
         files = glob.glob(os.path.join(outpath,"*.long.%s.fish"%filter))
+        #files = glob.glob(os.path.join(outpath,"*.short.%s.fish"%filter))
         files = sorted(files)
 
         runNumbers = []
@@ -775,9 +880,12 @@ def combinefisheye(params):
         indexes = np.where(data_all[:,18] < 0.1)[0]
         data_all = data_all[indexes,:]
         magnitudes = data_all[:,10] - data_all[:,17]
+        #magnitudes = data_all[:,10]
+        #magnitudes = data_all[:,0] 
 
         zenith = (90 - data_all[:,15]) * 2 * np.pi / 360.0
         secant = (1.002432 * np.cos(zenith)**2 + 0.148386 * np.cos(zenith) + 0.0096467) / (np.cos(zenith)**3 + 0.149864 * np.cos(zenith)**2 + 0.0102963 * np.cos(zenith) + 0.00303978)
+        secant = 1/np.cos(zenith)
 
         plotName = os.path.join(plotDir,'mag_x_y.png')
         plot = plt.scatter(data_all[:,11],data_all[:,12],s=10,c=magnitudes,vmin=12,vmax=15,edgecolor='none')
@@ -794,6 +902,7 @@ def combinefisheye(params):
 
         #data_all[:,17] = data_all[:,17] + 18
 
+        magnitudes = magnitudes[data_all[:,0].argsort()]
         data_all = data_all[data_all[:,0].argsort(),:]
         ar,return_index,return_inverse = np.unique(data_all[:,0],return_index=True, return_inverse=True)
         indexes = np.where(return_inverse == mode(return_inverse)[0])[0]
@@ -988,6 +1097,7 @@ def combinefisheye(params):
 
         zenith = (90 - data_all_cut[:,15]) * 2 * np.pi / 360.0
         secant = (1.002432 * np.cos(zenith)**2 + 0.148386 * np.cos(zenith) + 0.0096467) / (np.cos(zenith)**3 + 0.149864 * np.cos(zenith)**2 + 0.0102963 * np.cos(zenith) + 0.00303978) 
+        secant = 1/np.cos(zenith)
 
         #secant = 1/np.cos(zenith * 2 * np.pi / 360.0)
         z = np.polyfit(secant, magnitudes_cut, 1)
@@ -1099,6 +1209,7 @@ def combinefisheye(params):
 
             zenith = (90 - data_all_cut[:,15]) * 2 * np.pi / 360.0
             secant = (1.002432 * np.cos(zenith)**2 + 0.148386 * np.cos(zenith) + 0.0096467) / (np.cos(zenith)**3 + 0.149864 * np.cos(zenith)**2 + 0.0102963 * np.cos(zenith) + 0.00303978)
+            secant = 1/np.cos(zenith)
 
             #secant = 1/np.cos(zenith * 2 * np.pi / 360.0)
             z = np.polyfit(secant, magnitudes_cut, 1)
@@ -1112,7 +1223,7 @@ def combinefisheye(params):
             p = np.poly1d(z)
             xp = np.linspace(1,3,100)
 
-            #plt.plot(secant,magnitudes_cut,'*')
+            plt.plot(secant,magnitudes_cut,'*')
             #plt.plot(xp, p(xp),'b-')
 
             #print magnitudes_cut
@@ -1122,18 +1233,18 @@ def combinefisheye(params):
             #    print data_all_cut[0,0],data_all_cut[0,1],p
             #    print magnitudes_cut
 
-            p = np.median(magnitudes_cut)
+            #p = np.median(magnitudes_cut)
 
             rmserrors.append(rmserror)
-            plt.plot(data_all_cut[0,0],rmserror,'*')
+            #plt.plot(data_all_cut[0,0],rmserror,'*')
 
-            fid.write("%.5f %.5f %.10e\n"%(data_all_cut[0,0],data_all_cut[0,1],p))
+            fid.write("%.5f %.5f %.10e %.10e\n"%(data_all_cut[0,0],data_all_cut[0,1],p[0],p[1]))
 
         fid.close()
 
         plt.xlabel('secant')
         plt.ylabel('minst')
-        #plt.xlim([1,3])
+        plt.xlim([1,3])
         plt.show()
         plt.savefig(plotName,dpi=200)
         plt.close('all')
@@ -1290,12 +1401,20 @@ def fisheye(params):
             if runNumber > params["maxframes"]:
                 continue
 
+            #if not runNumber == 128:
+            #    continue
+
             fileprefix = file.replace(".fits","")
 
-            fisheye_command = "./imstats_fish.sh %s"%fileprefix
-            print fisheye_command
-            print stop
-            os.system(fisheye_command)
+            type = file.split('.')[-3]
+            if type == "short":
+                fisheye_command = "./imstats_fish_short.sh %s"%fileprefix
+                os.system(fisheye_command)
+            else:
+                fisheye_command = "./imstats_fish.sh %s"%fileprefix
+                #print fisheye_command
+                #print stop
+                os.system(fisheye_command)
 
             outputfile = file.replace("fits","fish")
 

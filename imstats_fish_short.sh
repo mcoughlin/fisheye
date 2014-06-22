@@ -153,16 +153,18 @@ if [[ $night -eq 1 ]] ; then
 # tphot the image, lots o' hardwired parameters...
   TRAD=4 TSIG=2 TMIN=50 TBIAS=2048 TAPRAD=4 
   TAPRAD=8 SKYRAD=40
-  TAPRAD=4
 
   #tphot $obs.fits -bias $TBIAS -rad $TRAD -sig $TSIG -min $TMIN -aprad $TAPRAD -okfit 0 -chin 100000 -out ${obs}_old.tph
 
   tphot $obs.fits -bias $TBIAS -rad $TRAD -sig $TSIG -min $TMIN -aprad $TAPRAD -skyrad $SKYRAD -okfit 0 -chin 100000 -out ${obs}_old.tph
   #tphot $obs.fits -bias $TBIAS -rad $TRAD -sig $TSIG -min $TMIN -aprad $TAPRAD -okfit 0 -chin 100000 -out $obs.tph -nxsky 10 -nysky 10
 
-  grep -v "#" ${obs}_old.tph | awk '{ if (($8/$9) > 10) print $0}' > ${obs}.tph
+  #echo tphot $obs.fits -bias $TBIAS -rad $TRAD -sig $TSIG -min $TMIN -aprad $TAPRAD -okfit 0 -chin 100000 -out ${obs}_old.tph
+  #exit 0
 
-  #python make_tph_majorminor.py --input ${obs}.tph --output ${obs}.tph
+  grep -v "#" ${obs}_old.tph | awk '{ if (($8/$9) > 1) print $0}' > ${obs}.tph
+
+  python make_tph_majorminor.py --input ${obs}.tph --output ${obs}.tph
 
   ntph=`wc $obs.tph | awk '{print $1}'`
 # How many stars did we find?

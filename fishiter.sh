@@ -17,8 +17,8 @@ LNG=-70.73669
 #LST=159.75
 
 #CATDIR=..             # Directory where star catalog is found
-CATDIR=/lsst/home/coughlin/allsky/bin
-PRODIR=/lsst/home/coughlin/allsky/bin
+CATDIR=/lsst/home/coughlin/git-repo/fisheye
+PRODIR=/lsst/home/coughlin/git-repo/fisheye
 
 MLIM=3                # Limiting magnitude from star catalog
 NSTAR=100             # Number of stars to collect from tph file
