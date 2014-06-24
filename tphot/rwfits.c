@@ -108,11 +108,17 @@ int *nx, *ny;		/* NAXIS1 and NAXIS2 from header */
   nhead = nhead + 87;
   bzero(*head, 80*nhead);
 
-  if( (err=openc_(&fd, file, &mode, 80)) != 0) return(err);
+  if( (err=openc_(&fd, file, &mode, strlen(file)+1)) != 0) return(err);
 
-  if( (err=rhead_(&fd, &nhead, *head, 80)) != 0) {close(fd); return(err);}
-  if( (err=parsehead_(&nhead, *head, &bitpix, nx,ny, &scale, &zero,80)) != 0) {
+  if( (err=rhead_(&fd, &nhead, *head, strlen(*head)+1)) != 0) {close(fd); return(err);}
+  if( (err=parsehead_(&nhead, *head, &bitpix, nx,ny, &scale, &zero,strlen(*head)+1)) != 0) {
     close(fd);    return(err);  }
+
+  if(ABS(bitpix) > 32) {
+    close(fd); 
+    fprintf(stderr, "Error incompatible BITPIX = %d\n", bitpix);
+    return(ERR_CANT_READ_DATA);
+  }
 
   npix = (*nx) * (*ny);
   nbyte = npix * (ABS(bitpix)/8);
@@ -120,8 +126,11 @@ int *nx, *ny;		/* NAXIS1 and NAXIS2 from header */
 
   *data = (float *) calloc(npix+17, sizeof(float));
 
-  if( (err=read(fd, *data, nbyte)) != nbyte) 
-    {close(fd); return(ERR_CANT_READ_DATA);}
+  if( (err=read(fd, *data, nbyte)) != nbyte) {
+    close(fd); 
+    fprintf(stderr, "Error: rwfits read %d but got %d\n", nbyte, err);
+    return(ERR_CANT_READ_DATA);
+  }
   close(fd);
 
   if(bitpix == -32) {
@@ -162,7 +171,7 @@ char *data;		/* image data */
 
   nhead = counthead(head);
 
-  if( (err=parsehead_(&nhead,head,&bitpix,&nx,&ny,&scale,&zero,80)) != 0) {
+  if( (err=parsehead_(&nhead,head,&bitpix,&nx,&ny,&scale,&zero,strlen(head)+1)) != 0) {
     close(fd);    return(err);  }
 
   if( (err=whead_(&fd, &nhead, head, strlen(head)+1)) != 0) {
@@ -209,7 +218,7 @@ int wfitsshort(char *head, char *data, char *file)
 
   nhead = counthead(head);
 
-  if( (err=parsehead_(&nhead,head,&bitpix,&nx,&ny,&scale,&zero,80)) != 0) {
+  if( (err=parsehead_(&nhead,head,&bitpix,&nx,&ny,&scale,&zero,strlen(head)+1)) != 0) {
     close(fd);    return(err);  }
 
   if( (err=whead_(&fd, &nhead, head, strlen(head)+1)) != 0) {
@@ -271,7 +280,7 @@ int *fd;		/* -1 to write a new file; fd to append */
 
   nhead = counthead(head);
 
-  if( (err=parsehead_(&nhead,head,&bitpix,&nx,&ny,&scale,&zero,80)) != 0) {
+  if( (err=parsehead_(&nhead,head,&bitpix,&nx,&ny,&scale,&zero,strlen(head)+1)) != 0) {
      if( err != ERR_NO_NAXIS) {
 	close(*fd);
 	return(err);
