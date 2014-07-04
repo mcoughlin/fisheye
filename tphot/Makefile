@@ -1,4 +1,4 @@
-CC= cc
+CC= gcc-mp-4.5
 FC= gfortran
 CLIBS= -lm
 CFLAGS= -O -g -Wall

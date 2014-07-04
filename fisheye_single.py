@@ -301,8 +301,7 @@ def clouds(params):
         if not os.path.isdir(baseplotDir):
             os.mkdir(baseplotDir)
 
-        magsDir = os.path.join(params["fisheyeplotpath"],filter)
-        filename = os.path.join(magsDir,"mags.txt")
+        filename = os.path.join(params["catalogpath"],"%s.txt"%filter)
         mags_data = np.loadtxt(filename)
 
         ra_min = np.min(mags_data[:,0]) * (2*np.pi/360.0)
@@ -673,110 +672,6 @@ def clouds(params):
             #v = p.vertices
             #x = v[:,0]
             #y = v[:,1]
-
-        zi_ave_norm = np.array(zi_ave) / float(len(files))
-
-        plotDir = os.path.join(baseplotDir,"ave")
-        if not os.path.isdir(plotDir):
-            os.mkdir(plotDir)
-
-        if True:
-            contour_levels = np.arange(-1, 1, 0.1)
-            plotName = os.path.join(plotDir,'contour_x_y.png')
-            plt.contour(xi,yi,zi_ave_norm,contour_levels,linewidths=0.5,colors='k')
-            plt.contourf(xi,yi,zi_ave_norm,contour_levels,cmap=plt.cm.rainbow)
-            cb = plt.colorbar() # draw colorbar
-            # plot data points.
-            plt.xlim([0,2897])
-            plt.ylim([0,1935])
-            plt.title("average loss")
-            #cb = plt.colorbar()
-            #cb.set_label('minst')
-            #cb.set_label('(minst - m) - m0')
-            plt.show()
-            plt.savefig(plotName,dpi=200)
-            plt.close('all')
-
-        moviedir = os.path.join(baseplotDir,"movie")
-        if not os.path.isdir(moviedir):
-            os.mkdir(moviedir)
-
-        folders = sorted(glob.glob(os.path.join(baseplotDir,'*')))
-        n=1
-        for folder in folders:
-            n = n + 1
-            file = os.path.join(folder,"diff_x_y.png")
-            filename = os.path.join(moviedir,"fishy-%04d.png"%n)
-            cp_command = "cp %s %s"%(file,filename)
-            os.system(cp_command)
-
-        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
-        filename = os.path.join(moviedir,"diff.mpg")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-        filename = os.path.join(moviedir,"diff.gif")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-
-        rm_command = "rm %s/*.png"%(moviedir)
-        os.system(rm_command)
-
-        n=1
-        for folder in folders:
-            n = n + 1
-            file = os.path.join(folder,"contour_x_y.png")
-            filename = os.path.join(moviedir,"fishy-%04d.png"%n)
-            cp_command = "cp %s %s"%(file,filename)
-            os.system(cp_command)
-
-        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
-        filename = os.path.join(moviedir,"contour.mpg")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-        filename = os.path.join(moviedir,"contour.gif")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-
-        rm_command = "rm %s/*.png"%(moviedir)
-        os.system(rm_command)
-
-        n=1
-        for folder in folders:
-            n = n + 1
-            file = os.path.join(folder,"skycontour_x_y.png")
-            filename = os.path.join(moviedir,"fishy-%04d.png"%n)
-            cp_command = "cp %s %s"%(file,filename)
-            os.system(cp_command)
-
-        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
-        filename = os.path.join(moviedir,"skycontour.mpg")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-        filename = os.path.join(moviedir,"skycontour.gif")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-
-        rm_command = "rm %s/*.png"%(moviedir)
-        os.system(rm_command)
-
-        n=1
-        for folder in folders:
-            n = n + 1
-            file = os.path.join(folder,"mollview.png")
-            filename = os.path.join(moviedir,"fishy-%04d.png"%n)
-            cp_command = "cp %s %s"%(file,filename)
-            os.system(cp_command)
-
-        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
-        filename = os.path.join(moviedir,"mollview.mpg")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-        filename = os.path.join(moviedir,"mollview.gif")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-
-        rm_command = "rm %s/*.png"%(moviedir)
-        os.system(rm_command)
 
 def getVariableStars():
 
@@ -1325,9 +1220,8 @@ def skybrightness(params):
 
         for file in files:
 
-            runNumber = int(file.split('.')[-5])
-            if runNumber > params["maxframes"]:
-                continue
+            folderName = file.split('.')[-5]
+            runNumber = int(folderName)
 
             fitshdr_command = "fitshdr %s"%(file)
             p = subprocess.Popen(fitshdr_command.split(" "),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -1388,7 +1282,6 @@ def fisheye(params):
     colors = params["colors"]
 
     for filter in filters:
-        outpath = os.path.join(params["dirpathname"],filter)
         outpath = os.path.join(params["fitspath"],filter)
 
         files = glob.glob(os.path.join(outpath,"*.%s.fits"%filter))
@@ -1396,21 +1289,14 @@ def fisheye(params):
 
         for file in files:
 
-            runNumber = int(file.split('.')[-4])
-            if runNumber > params["maxframes"]:
-                continue
-
-            #if not runNumber == 128:
-            #    continue
-
             fileprefix = file.replace(".fits","")
 
             type = file.split('.')[-3]
             if type == "short":
-                fisheye_command = "./imstats_fish_short.sh %s"%fileprefix
+                fisheye_command = "./imstats_fish_short_single.sh %s"%fileprefix
                 os.system(fisheye_command)
             else:
-                fisheye_command = "./imstats_fish.sh %s"%fileprefix
+                fisheye_command = "./imstats_fish_single.sh %s"%fileprefix
                 #print fisheye_command
                 #print stop
                 os.system(fisheye_command)
@@ -1549,182 +1435,205 @@ def makefits(params):
     if not os.path.isdir(outpath):
          os.mkdir(outpath)
 
-    framecounter = 1
-    for i in xrange(params["maxframes"]):
+    filename_gz = params["file"]
+    filename = filename_gz.replace(".gz","")
 
-        filename_short_gz = os.path.join(params["datapath"],"%s.%04d.short.cr2.gz"%(params["dirname"],framecounter))
-        filename_short = os.path.join(outpath,"%s.%04d.short.cr2"%(params["dirname"],framecounter))
-        framecounter = framecounter + 1
-        filename_long_gz = os.path.join(params["datapath"],"%s.%04d.long.cr2.gz"%(params["dirname"],framecounter))
-        filename_long = os.path.join(outpath,"%s.%04d.long.cr2"%(params["dirname"],framecounter))
-        framecounter = framecounter + 1
-
-        #if not framecounter == 201:
-        #    continue
-
-        if os.path.isfile(filename_short) and os.path.isfile(filename_long):
-            continue
-
-        if not (os.path.isfile(filename_short_gz) and os.path.isfile(filename_long_gz)):
-            continue
-
-        gzip_command = 'gzip -c -d %s > %s'%(filename_short_gz,filename_short)
-        os.system(gzip_command)
-        gzip_command = 'gzip -c -d %s > %s'%(filename_long_gz,filename_long)
-        os.system(gzip_command)
-
-        for filter,color in zip(filters,colors):
-
-            print "Extracting %s FITS from CR2, raw2fits -%s ..."%(filter,color)
-            #outpath = os.path.join(params["dirpathname"],filter)
-            outpath = os.path.join(params["fitspath"],filter)
-
-            plotdir = os.path.join(outpath,"plots")
-            if not os.path.isdir(plotdir):
-                os.mkdir(plotdir)
-
-            cr2fits_command = "raw2fits -dir %s -%s %s"%(outpath,color,filename_short)
-            os.system(cr2fits_command)
-            cr2fits_command = "raw2fits -dir %s -%s %s"%(outpath,color,filename_long)
-            os.system(cr2fits_command)
-
-            filename_short_split = filename_short.split("/")
-            fitsfile_short = os.path.join(outpath,filename_short_split[-1].replace("cr2","fits"))
-            filename_long_split = filename_long.split("/")
-            fitsfile_long = os.path.join(outpath,filename_long_split[-1].replace("cr2","fits"))
-
-            mv_command = "mv %s %s"%(fitsfile_short,fitsfile_short.replace("fits","%s.fits"%filter))
-            os.system(mv_command)
-            fitsfile_short = fitsfile_short.replace("fits","%s.fits"%filter)
-            mv_command = "mv %s %s"%(fitsfile_long,fitsfile_long.replace("fits","%s.fits"%filter))
-            os.system(mv_command)
-            fitsfile_long = fitsfile_long.replace("fits","%s.fits"%filter)
-
-            fitsfile_short_median = fitsfile_short.replace("fits","median.fits")
-            hdulist = astropy.io.fits.open(fitsfile_short)
-            im = hdulist[0].data
-            gethead_command = "gethead %s BIAS"%(fitsfile_short)
-            p = subprocess.Popen(gethead_command.split(" "),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            output, errors = p.communicate()
-            bias = float(output)
-
-            side = 10
-            size=(side,side)
-            im_filt = scipy.ndimage.filters.median_filter(im, size=size, mode='reflect')
-
-            hdulist = astropy.io.fits.open(fitsfile_short)
-            hdulist[0].data = im_filt
-            hdulist.writeto(fitsfile_short_median,output_verify='warn',clobber=True)
-
-            #if np.mod(i,50) == 0:
-            if True:
-                fitsSplit = fitsfile_short.split("/")
-                plotName = os.path.join(plotdir,'%s.png'%fitsSplit[-1])
-
-                gc = aplpy.FITSFigure(fitsfile_short)
-                gc.show_grayscale()
-                gc.tick_labels.set_font(size='small')
-                gc.save(plotName)
-                gc.close()
-
-                fitsSplit = fitsfile_short_median.split("/")
-                plotName = os.path.join(plotdir,'%s.png'%fitsSplit[-1])
-                gc._data = im_filt
-                gc.show_grayscale()
-                gc.tick_labels.set_font(size='small')
-                gc.save(plotName)
-                gc.close()
-
-            fitsfile_long_median = fitsfile_long.replace("fits","median.fits")
-            hdulist = astropy.io.fits.open(fitsfile_long)
-            im = hdulist[0].data
-            gethead_command = "gethead %s BIAS"%(fitsfile_long)
-            p = subprocess.Popen(gethead_command.split(" "),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            output, errors = p.communicate()
-            bias = float(output)
-
-            side = 10
-            size=(side,side)
-            im_filt = scipy.ndimage.filters.median_filter(im, size=size, mode='reflect')
-
-            hdulist = astropy.io.fits.open(fitsfile_long)
-            hdulist[0].data = im_filt
-            hdulist.writeto(fitsfile_long_median,output_verify='warn',clobber=True)
-
-            #if np.mod(i,50) == 0:
-            if True:
-                fitsSplit = fitsfile_long.split("/")
-                plotName = os.path.join(plotdir,'%s.png'%fitsSplit[-1])
-                gc = aplpy.FITSFigure(fitsfile_long)
-                gc.show_grayscale()
-                gc.tick_labels.set_font(size='small')
-                gc.save(plotName)
-                gc.close()
-
-                fitsSplit = fitsfile_long_median.split("/")
-                plotName = os.path.join(plotdir,'%s.png'%fitsSplit[-1])
-                gc._data = im_filt
-                gc.show_grayscale()
-                gc.tick_labels.set_font(size='small')
-                gc.save(plotName)
-                gc.close()
-
-def makemovie(params):
-
-    filters = params["filters"]
-    colors = params["colors"]
+    gzip_command = 'gzip -c -d %s > %s'%(filename_gz,filename)
+    os.system(gzip_command)
 
     for filter,color in zip(filters,colors):
 
+        print "Extracting %s FITS from CR2, raw2fits -%s ..."%(filter,color)
         #outpath = os.path.join(params["dirpathname"],filter)
         outpath = os.path.join(params["fitspath"],filter)
+
         plotdir = os.path.join(outpath,"plots")
         if not os.path.isdir(plotdir):
             os.mkdir(plotdir)
 
+        cr2fits_command = "raw2fits -dir %s -%s %s"%(outpath,color,filename)
+        os.system(cr2fits_command)
+
+        filename_split = filename.split("/")
+        fitsfile = os.path.join(outpath,filename_split[-1].replace("cr2","fits"))
+
+        mv_command = "mv %s %s"%(fitsfile,fitsfile.replace("fits","%s.fits"%filter))
+        os.system(mv_command)
+        fitsfile = fitsfile.replace("fits","%s.fits"%filter)
+
+        fitsfile_median = fitsfile.replace("fits","median.fits")
+        hdulist = astropy.io.fits.open(fitsfile)
+        im = hdulist[0].data
+        gethead_command = "gethead %s BIAS"%(fitsfile)
+        p = subprocess.Popen(gethead_command.split(" "),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        output, errors = p.communicate()
+        bias = float(output)
+
+        side = 10
+        size=(side,side)
+        im_filt = scipy.ndimage.filters.median_filter(im, size=size, mode='reflect')
+
+        hdulist = astropy.io.fits.open(fitsfile)
+        hdulist[0].data = im_filt
+        hdulist.writeto(fitsfile_median,output_verify='warn',clobber=True)
+
+        #if np.mod(i,50) == 0:
+        if True:
+            fitsSplit = fitsfile.split("/")
+            plotName = os.path.join(plotdir,'%s.png'%fitsSplit[-1])
+
+            gc = aplpy.FITSFigure(fitsfile)
+            gc.show_grayscale()
+            gc.tick_labels.set_font(size='small')
+            gc.save(plotName)
+            gc.close()
+
+            fitsSplit = fitsfile_median.split("/")
+            plotName = os.path.join(plotdir,'%s.png'%fitsSplit[-1])
+            gc._data = im_filt
+            gc.show_grayscale()
+            gc.tick_labels.set_font(size='small')
+            gc.save(plotName)
+            gc.close()
+
+def copy_files(params):
+
+    import pexpect
+    user = "coughlin"
+    password = "I Love You\r"
+    host = "lsst-dev.ncsa.illinois.edu"
+    path = "/home/coughlin/public_html/webserver"
+
+    child = pexpect.spawn('scp -r %s %s@%s:%s' % (params["datapath"], user, host,path))
+    print 'scp -r %s %s@%s:%s' % (params["datapath"], user, host,path)
+
+    i = child.expect("id_rsa':",timeout=120)
+    print password
+    child.sendline(password)
+    data = child.read()
+    print data
+    child.close()
+
+def html_page(params,dateobs):
+
+    title = "All-sky Summary Page for %s"%(dateobs)
+
+    contents=["""
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+    <html>
+    <head>
+    <title>%s</title>
+    <link rel="stylesheet" type="text/css" href="../style/main.css">
+    <script src="../style/sorttable.js"></script>
+    </head>
+    <body>
+    <table style="text-align: left; width: 1260px; height: 67px; margin-left:auto; margin-right: auto;" border="1" cellpadding="1" cellspacing="1">
+    <tbody>
+    <tr>
+    <td style="text-align: center; vertical-align: top; background-color:SpringGreen;"><big><big><big><big><span style="font-weight: bold;">%s</span></big></big></big></big>
+    </td>
+    </tr>
+    </tbody>
+    </table>
+    <br>
+    <br>
+
+    """%(dateobs,dateobs)]
+
+    table = ["""
+    <table style="text-align: center; width: 1260px; height: 67px; margin-left:auto; margin-right: auto;" border="1" cellpadding="1" cellspacing="1">
+    <tbody>
+    <tr><td>M</td><td>G</td></tr>
+    <tr>
+    <td style="vertical-align: top;"><a href="./M.png"><img alt="" src="./M.png" style="border: 0px solid ; width: 630px; height: 432px;"></a><br></td>
+    <td style="vertical-align: top;"><a href="./G.png"><img alt="" src="./G.png" style="border: 0px solid ; width: 630px; height: 432px;"></a><br></td>
+    </tr>
+    <tr><td>R</td><td>B</td></tr>
+    <tr>
+    <td style="vertical-align: top;"><a href="./R.png"><img alt="" src="./R.png" style="border: 0px solid ; width: 630px; height: 432px;"></a><br></td>
+    <td style="vertical-align: top;"><a href="./B.png"><img alt="" src="./B.png" style="border: 0px solid ; width: 630px; height: 432px;"></a><br></td>
+    </tr>
+    """]
+
+    table.append("</tbody></table><br><br>")
+    contents.append("".join(table))
+
+    ################################# closing ##################################
+    user=os.environ['USER']
+    curTime=time.strftime('%m-%d-%Y %H:%M:%S',time.localtime())
+    contents.append("""
+    <small>
+    This page was created by user %s on %s
+    </small>
+    </body>
+    </html>
+    """%(user,curTime))
+
+    page = ''.join(contents)
+
+    return page
+
+def copy_files_single(params):
+
+    import pexpect
+    user = "coughlin"
+    password = "I Love You\r"
+    host = "lsst-dev.ncsa.illinois.edu"
+    path = "/home/coughlin/public_html/webserver"
+
+    filters = params["filters"]
+
+    for filter in filters:
+        #outpath = os.path.join(params["dirpathname"],filter)
+        outpath = os.path.join(params["cloudsplotpath"],filter)
+
+        baseplotDir = os.path.join(params["cloudsplotpath"],filter)
+        if not os.path.isdir(baseplotDir):
+            os.mkdir(baseplotDir)
+
+        folders = glob.glob(os.path.join(baseplotDir,"*"))
+        for folder in folders:
+            file = os.path.join(folder,'contour_x_y.png')
+            if os.path.isfile(file):
+                child = pexpect.spawn('scp -r %s %s@%s:%s/%s.png' % (file, user, host,path,filter))
+                i = child.expect("id_rsa':",timeout=120)
+                child.sendline(password)
+                data = child.read()
+                print data
+                child.close()
+
         outpath = os.path.join(params["dirpathname"],filter)
-        if not os.path.isdir(outpath):
-            os.mkdir(outpath)
-        moviedir = os.path.join(outpath,"movie")
-        if not os.path.isdir(moviedir):
-            os.mkdir(moviedir)
+        fitsfile = glob.glob(os.path.join(outpath,"*.%s.fits"%filter))
+        if len(fitsfile) == 0:
+            continue
+        fitsfile = fitsfile[0]
+        fitshdr_command = "fitshdr %s"%(fitsfile)
+        p = subprocess.Popen(fitshdr_command.split(" "),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        output, errors = p.communicate()
 
-        files = sorted(glob.glob(os.path.join(plotdir,'*.long.%s.fits.png'%filter)))
-        n=1
-        for file in files:
-            n = n + 1
-            filename = os.path.join(moviedir,"fishy-%04d.png"%n)
-            cp_command = "cp %s %s"%(file,filename)
-            os.system(cp_command)
+        for line in output.split("\n"):
+            lineSplit = line.split(" ")
+            lineSplit = [x for x in lineSplit if x != '']
+            if len(lineSplit) == 0:
+                continue
 
-        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
-        filename = os.path.join(moviedir,"long.mpg")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-        filename = os.path.join(moviedir,"long.gif")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
+            if lineSplit[0] == "DATE-OBS=":
+                dateobs=lineSplit[1]
+                dateobs=dateobs.replace("'","").replace("T"," ")
 
-        rm_command = "rm %s/*.png"%(moviedir)
-        os.system(rm_command)
+    htmlPage = html_page(params,dateobs) 
+    if htmlPage is not None:
+        htmlfile = os.path.join(params["cloudsplotpath"],"index.html")
+        f = open(htmlfile,"w")
+        f.write(htmlPage)
+        f.close()
 
-        files = sorted(glob.glob(os.path.join(plotdir,'*.long.%s.median.fits.png'%filter)))
-        n=1
-        for file in files:
-            n = n + 1
-            filename = os.path.join(moviedir,"fishy-%04d.png"%n)
-            cp_command = "cp %s %s"%(file,filename)
-            os.system(cp_command)
+        child = pexpect.spawn('scp -r %s %s@%s:%s/' % (htmlfile, user, host,path))
+        i = child.expect("id_rsa':",timeout=120)
+        child.sendline(password)
+        data = child.read()
+        print data
+        child.close()
 
-        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
-        filename = os.path.join(moviedir,"long_median.mpg")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-        moviefiles = os.path.join(moviedir,"fishy-%04d.png")
-        filename = os.path.join(moviedir,"long_median.gif")
-        ffmpeg_command = 'ffmpeg -an -y -r 20 -i %s -b:v %s %s'%(moviefiles,'5000k',filename)
-        os.system(ffmpeg_command)
-
-        rm_command = "rm %s/*.png"%(moviedir)
-        os.system(rm_command)
 
