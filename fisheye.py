@@ -22,6 +22,7 @@ import healpy as hp
 
 from scipy.stats import mode
 #from scipy.interpolate import griddata
+from scipy.optimize import curve_fit
 
 import matplotlib
 #matplotlib.rc('text', usetex=True)
@@ -446,8 +447,8 @@ def clouds(params):
                     mags.append(magnitudes[i])
                 else:
  
-                    mag_estimate = mags_data[index,2][0]
-                    mag_estimate = mags_data[index,2][0] + secant*mags_data_slope_median
+                    mag_estimate = mags_data[index,2][0] + secant*mags_data[index,3][0]
+                    #mag_estimate = mags_data[index,2][0] + secant*mags_data_slope_median
                     mags.append(mag_estimate)
 
             data_all_new = []
@@ -800,6 +801,10 @@ def getVariableStars():
  
     return variableStars
 
+def m_func(x_4d, alpha, beta, gamma, m_0):
+    m_corr = x_4d[:,0] - (alpha + beta*x_4d[:,1])*x_4d[:,2] - gamma * x_4d[:,3] + m_0
+    return m_corr
+
 def combinefisheye(params):
 
     filters = params["filters"]
@@ -909,6 +914,10 @@ def combinefisheye(params):
         data_all_cut = data_all[indexes,:]
         magnitudes_cut = magnitudes[indexes]
 
+        indexes = data_all_cut[:,-1].argsort()
+        data_all_cut = data_all_cut[indexes,:]
+        magnitudes_cut = magnitudes_cut[indexes]
+
         radecdiff = np.sqrt((data_all[:,0] - data_all_cut[0,0])**2 + (data_all[:,1] - data_all_cut[0,1])**2)
         ar,return_index,return_inverse = np.unique(radecdiff,return_index=True, return_inverse=True)
 
@@ -921,6 +930,9 @@ def combinefisheye(params):
         indexes = np.where(return_inverse == mode(return_inverse)[0])[0] 
         data_all_cut_2 = data_all_cut_2[indexes,:]
         magnitudes_cut_2 = magnitudes_cut_2[indexes]
+
+        data_all_cut = data_all_cut[100:500,:]
+        magnitudes_cut = magnitudes_cut[100:500]
 
         #indexes = np.where(return_inverse == index_2)[0]
         #print indexes
@@ -1097,7 +1109,7 @@ def combinefisheye(params):
 
         zenith = (90 - data_all_cut[:,15]) * 2 * np.pi / 360.0
         secant = (1.002432 * np.cos(zenith)**2 + 0.148386 * np.cos(zenith) + 0.0096467) / (np.cos(zenith)**3 + 0.149864 * np.cos(zenith)**2 + 0.0102963 * np.cos(zenith) + 0.00303978) 
-        secant = 1/np.cos(zenith)
+        #secant = 1/np.cos(zenith)
 
         #secant = 1/np.cos(zenith * 2 * np.pi / 360.0)
         z = np.polyfit(secant, magnitudes_cut, 1)
@@ -1156,6 +1168,43 @@ def combinefisheye(params):
         plt.show()
         plt.savefig(plotName,dpi=200)
         plt.close('all')
+
+        m_inst = data_all_cut[:,17]
+        b_minus_v = data_all_cut[:,8]
+        airmass = secant
+        f_of_r = data_all_cut[:,16]
+        ydata = np.zeros(data_all_cut[:,17].shape)
+
+        alpha = 0
+        beta = 0
+        gamma = 0
+        m_0 = -4
+        p0 = (alpha,beta,gamma,m_0)
+
+        x_4d = np.vstack((m_inst,b_minus_v, airmass, f_of_r)).T
+        popt, pcov = curve_fit(m_func, x_4d, ydata, p0=p0)
+        y_fit = m_func(x_4d, popt[0], popt[1], popt[2], popt[3])
+
+        plotName = os.path.join(plotDir,'mag_sec_max_fit.png')
+        plt.plot(secant,y_fit,'*')
+        #plt.xlim([-0.05,0.95])
+        #plt.xlabel('mod(y,1)')
+        #plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'mag_time_max_fit.png')
+        plt.plot(data_all_cut[:,21],y_fit,'*')
+        #plt.xlim([-0.05,0.95])
+        #plt.xlabel('mod(y,1)')
+        #plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+ 
+        print plotName
+        print stop
 
         unique_return_inverse = np.unique(return_inverse)
 
@@ -1223,6 +1272,9 @@ def combinefisheye(params):
             p = np.poly1d(z)
             xp = np.linspace(1,3,100)
 
+            #fit m_com | r=0 = m_inst - (alpha + beta (m_g - m_z))*airmass + gamma*f(r) - m_effect (-14)
+            #magnitudes = data_all[:,17]
+
             plt.plot(secant,magnitudes_cut,'*')
             #plt.plot(xp, p(xp),'b-')
 
@@ -1237,6 +1289,23 @@ def combinefisheye(params):
 
             rmserrors.append(rmserror)
             #plt.plot(data_all_cut[0,0],rmserror,'*')
+
+            m_inst = data_all_cut[:,17]
+            b_minus_v = data_all_cut[:,8]
+            airmass = secant
+            f_of_r = data_all_cut[:,16]
+            ydata = np.zeros(data_all_cut[:,17].shape)
+
+            alpha = 0
+            beta = 0
+            gamma = 0
+            m_0 = -4
+
+            p0 = (alpha,beta,gamma,m_0)
+            x_4d = np.vstack((m_inst,b_minus_v, airmass, f_of_r)).T
+            popt, pcov = curve_fit(m_func, x_4d, ydata, p0=p0)
+
+            print popt
 
             fid.write("%.5f %.5f %.10e %.10e\n"%(data_all_cut[0,0],data_all_cut[0,1],p[0],p[1]))
 
@@ -1314,6 +1383,7 @@ def skybrightness(params):
     data = {}
 
     for filter in filters:
+        outpath = os.path.join(params["dirpathname"],filter)
         outpath = os.path.join(params["fitspath"],filter)
 
         files = glob.glob(os.path.join(outpath,"*.long.%s.median.fits"%filter))
