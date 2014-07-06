@@ -1291,15 +1291,28 @@ def fisheye(params):
 
             fileprefix = file.replace(".fits","")
 
+            fitshdr_command = "fitshdr %s"%(file)
+            p = subprocess.Popen(fitshdr_command.split(" "),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            output, errors = p.communicate()
+
+            for line in output.split("\n"):
+                lineSplit = line.split(" ")
+                lineSplit = [x for x in lineSplit if x != '']
+                if len(lineSplit) == 0:
+                    continue
+
+                if lineSplit[0] == "MJD-OBS":
+                    utcobs=float(lineSplit[2])
+
             type = file.split('.')[-3]
-            if type == "short":
-                fisheye_command = "./imstats_fish_short_single.sh %s"%fileprefix
-                os.system(fisheye_command)
+            if utcobs <= 56809:
+                lens_type = "old"
             else:
-                fisheye_command = "./imstats_fish_single.sh %s"%fileprefix
-                #print fisheye_command
-                #print stop
-                os.system(fisheye_command)
+                lens_type = "new"
+
+            imstats_file = "./imstats_fish/imstats_fish_%s_%s.sh"%(type,lens_type)
+            fisheye_command = "%s %s"%(imstats_file,fileprefix)
+            os.system(fisheye_command)
 
             outputfile = file.replace("fits","fish")
 

@@ -24,7 +24,6 @@ MLIM=3                # Limiting magnitude from star catalog
 NSTAR=100             # Number of stars to collect from tph file
 MCHTOL=14             # Match tolerance [pix]
 RSIG=5                # Prune residuals worse than RSIG * median
-#MCHTOL=100
 
 FRAT=0.0              # Vignetting correction f-ratio (0 means no correction)
 
@@ -36,19 +35,19 @@ FRAT=0.0              # Vignetting correction f-ratio (0 means no correction)
 #PARITY=-1
 #MED=4.552
 
-#HA=0.015
-#DEC=-27.092
-#AZ=95.082
-#SCALE=0.04705
-#PARITY=1
-#MED=1.054
+HA=0.015
+DEC=-27.092
+AZ=95.082
+SCALE=0.04705
+PARITY=1
+MED=1.054
 
-echo HA = $HA
-echo DEC = $DEC
-echo AZ = $AZ
-echo SCALE = $SCALE
-echo PARITY = $PARITY
-echo MED = $MED
+HA=-11.310
+DEC=-26.318 
+AZ=91.408 
+SCALE=0.05864 
+PARITY=1 
+MED=2.832
 
 #CX=1420               # Observation image center [default, can be overridden]
 #CY=975                # Observation image center [default]

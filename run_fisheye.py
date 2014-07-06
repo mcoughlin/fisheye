@@ -26,7 +26,6 @@ def parse_commandline():
 
     parser.add_option("-m", "--maxframes", help="max frames",default=100000,type=int)
     parser.add_option("-u", "--user", help="username",default="coughlin")
-    parser.add_option("-f", "--folderName", help="folder name",default="ut041414")
     parser.add_option("-o", "--outputFolder", help="output folder",default="ut041414")
     parser.add_option("-v", "--verbose", action="store_true", default=False,
                       help="Run verbosely. (Default: False)")
@@ -139,12 +138,10 @@ if __name__=="__main__":
     opts = parse_commandline()
 
     outputFolder = opts.outputFolder
-    folderName = opts.folderName
     maxframes = opts.maxframes
     user = opts.user
 
     params = {}
-    params["folderName"] = folderName
     params["outputFolder"] = outputFolder
     params["maxframes"] = maxframes
     params["user"] = user
