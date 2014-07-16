@@ -878,6 +878,9 @@ def combinefisheye(params):
         plt.savefig(plotName,dpi=200)
         plt.close('all')
 
+        print data_all.shape
+
+
         indexes = np.where(~np.isnan(data_all[:,17]))[0]
         data_all = data_all[indexes,:]
         magnitudes = data_all[:,10] - data_all[:,17]
@@ -887,6 +890,8 @@ def combinefisheye(params):
         magnitudes = data_all[:,10] - data_all[:,17]
         #magnitudes = data_all[:,10]
         #magnitudes = data_all[:,0] 
+
+        print data_all.shape
 
         zenith = (90 - data_all[:,15]) * 2 * np.pi / 360.0
         secant = (1.002432 * np.cos(zenith)**2 + 0.148386 * np.cos(zenith) + 0.0096467) / (np.cos(zenith)**3 + 0.149864 * np.cos(zenith)**2 + 0.0102963 * np.cos(zenith) + 0.00303978)
@@ -931,8 +936,8 @@ def combinefisheye(params):
         data_all_cut_2 = data_all_cut_2[indexes,:]
         magnitudes_cut_2 = magnitudes_cut_2[indexes]
 
-        data_all_cut = data_all_cut[100:500,:]
-        magnitudes_cut = magnitudes_cut[100:500]
+        #data_all_cut = data_all_cut[100:500,:]
+        #magnitudes_cut = magnitudes_cut[100:500]
 
         #indexes = np.where(return_inverse == index_2)[0]
         #print indexes
@@ -1203,9 +1208,6 @@ def combinefisheye(params):
         plt.savefig(plotName,dpi=200)
         plt.close('all')
  
-        print plotName
-        print stop
-
         unique_return_inverse = np.unique(return_inverse)
 
         plotName = os.path.join(plotDir,'mag_r.png')
@@ -1415,12 +1417,19 @@ def skybrightness(params):
                     exptime=float(lineSplit[2])
                 elif lineSplit[0] == "MJD-OBS":
                     mjdobs=float(lineSplit[2])
+                elif lineSplit[0] == "NAXIS1":
+                    nx=float(lineSplit[2])
+                elif lineSplit[0] == "NAXIS2":
+                    ny=float(lineSplit[2])
 
             hdulist = astropy.io.fits.open(file)
             scidata = hdulist[0].data
             im = scidata
 
-            skyval = (im[1450,968]-bias)/exptime
+            index_x = int(np.ceil(nx/2))
+            index_y = int(np.ceil(ny/2))
+
+            skyval = (im[index_x,index_y]-bias)/exptime
             runNumbers.append(runNumber)
             skybrightness.append(skyval)
             mjdobss.append(mjdobs)
@@ -1433,7 +1442,7 @@ def skybrightness(params):
         plt.semilogy(runNumbers,skybrightness,'*')
         plt.xlabel('run number')
         plt.ylabel('skybrightness')
-        plt.title(params["folderName"])
+        plt.title(params["outputFolder"])
         plt.show()
         plt.savefig(plotName,dpi=200)
         plt.close('all')
@@ -1470,7 +1479,7 @@ def fisheye(params):
             if runNumber > params["maxframes"]:
                 continue
 
-            #if not runNumber == 128:
+            #if not runNumber == 267:
             #    continue
 
             fileprefix = file.replace(".fits","")
@@ -1489,7 +1498,7 @@ def fisheye(params):
                     utcobs=float(lineSplit[2])
 
             type = file.split('.')[-3]
-            if utcobs <= 56809:
+            if utcobs <= 56800:
                 lens_type = "old"
             else:
                 lens_type = "new"
@@ -1507,6 +1516,10 @@ def fisheye(params):
 
             if len(data_out) == 0:
                 continue 
+
+            if data_out.ndim == 1:
+                print "only one entry in file... continuing"
+                continue
 
             hist_vals = data_out[:,-1]
 

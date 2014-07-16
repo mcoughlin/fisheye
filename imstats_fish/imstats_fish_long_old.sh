@@ -144,20 +144,20 @@ if [[ $night -eq 1 ]] ; then
 # First iteration: MLIM=3, NSTAR=100, matched fit then pruned fit:
     if [[ $VERB -gt 0 ]] ; then echo First iteration: MLIM=3, NSTAR=100 ; fi
 
-    fishiter_new.sh $obs CATDIR=$CATDIR MLIM=3 NSTAR=100 MCHTOL=$MCHTOL1 HA=$HA DEC=$DEC AZ=$AZ SCALE=$SCALE LNG=$LNG LAT=$LAT FRAT=$frat CLEAN=$CLEAN VERB=$VERB
+    fishiter.sh $obs CATDIR=$CATDIR MLIM=3 NSTAR=100 MCHTOL=$MCHTOL1 HA=$HA DEC=$DEC AZ=$AZ SCALE=$SCALE LNG=$LNG LAT=$LAT FRAT=$frat CLEAN=$CLEAN VERB=$VERB
 
 # Second iteration: MLIM=5, NSTAR=1000, matched fit then pruned fit:
     if [[ $VERB -gt 0 ]] ; then echo Second iteration: MLIM=5, NSTAR=1000 ; fi
     if [[ -e $obs.fish ]] ; then
       parm=(`grep "HA=" $obs.fish`)
       HA=${parm[2]} DEC=${parm[4]} AZ=${parm[6]} SCALE=${parm[8]} QUAD=${parm[10]} CUBE=${parm[12]} CX=${parm[14]} CY=${parm[16]}
-      fishiter_new.sh $obs CATDIR=$CATDIR MLIM=5 NSTAR=1000 MCHTOL=$MCHTOL HA=$HA DEC=$DEC AZ=$AZ SCALE=$SCALE CX=$CX CY=$CY QUAD=$QUAD CUBE=$CUBE LNG=$LNG LAT=$LAT FRAT=$frat CLEAN=$CLEAN VERB=$VERB
+      fishiter.sh $obs CATDIR=$CATDIR MLIM=5 NSTAR=1000 MCHTOL=$MCHTOL HA=$HA DEC=$DEC AZ=$AZ SCALE=$SCALE CX=$CX CY=$CY QUAD=$QUAD CUBE=$CUBE LNG=$LNG LAT=$LAT FRAT=$frat CLEAN=$CLEAN VERB=$VERB
 
 # Third iteration: MLIM=6, NSTAR=2000, matched fit then pruned fit:
       if [[ $VERB -gt 0 ]] ; then echo Third iteration: MLIM=6, NSTAR=2000 ; fi
       parm=(`grep "HA=" $obs.fish`)
       HA=${parm[2]} DEC=${parm[4]} AZ=${parm[6]} SCALE=${parm[8]} QUAD=${parm[10]} CUBE=${parm[12]} CX=${parm[14]} CY=${parm[16]}
-      fishiter_new.sh $obs CATDIR=$CATDIR MLIM=6 NSTAR=2000 MCHTOL=5 HA=$HA DEC=$DEC AZ=$AZ SCALE=$SCALE CX=$CX CY=$CY QUAD=$QUAD CUBE=$CUBE RSIG=$RSIG LNG=$LNG LAT=$LAT FRAT=$frat CLEAN=$CLEAN VERB=$VERB
+      fishiter.sh $obs CATDIR=$CATDIR MLIM=6 NSTAR=2000 MCHTOL=5 HA=$HA DEC=$DEC AZ=$AZ SCALE=$SCALE CX=$CX CY=$CY QUAD=$QUAD CUBE=$CUBE RSIG=$RSIG LNG=$LNG LAT=$LAT FRAT=$frat CLEAN=$CLEAN VERB=$VERB
 
 # Insert a few extras that may be useful
       parm=(`grep "HA=" $obs.fish`)
