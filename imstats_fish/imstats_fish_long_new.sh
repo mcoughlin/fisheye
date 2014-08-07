@@ -147,6 +147,13 @@ if [[ $night -eq 1 ]] ; then
 # First iteration: MLIM=3, NSTAR=100, matched fit then pruned fit:
     if [[ $VERB -gt 0 ]] ; then echo First iteration: MLIM=3, NSTAR=100 ; fi
 
+    echo $HA
+    echo $DEC
+    echo $AZ
+    echo $SCALE
+    echo $LNG
+    echo $LAT
+
     fishiter.sh $obs CATDIR=$CATDIR MLIM=3 NSTAR=100 MCHTOL=$MCHTOL1 HA=$HA DEC=$DEC AZ=$AZ SCALE=$SCALE LNG=$LNG LAT=$LAT FRAT=$frat CLEAN=$CLEAN VERB=$VERB
 
 # Second iteration: MLIM=5, NSTAR=1000, matched fit then pruned fit:

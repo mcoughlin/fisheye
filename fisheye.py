@@ -562,6 +562,10 @@ def clouds(params):
             plt.contour(xi,yi,zi,contour_levels,linewidths=0.5,colors='k')
             plt.contourf(xi,yi,zi,contour_levels,cmap=plt.cm.rainbow,vmax=colorRange, vmin=-colorRange)
 
+            cb = plt.colorbar()
+            #cb.set_label('minst')
+            cb.set_label('minst - m0')            
+
             CS_ra = plt.contour(xi,yi,zi_ra,contour_levels_ra,linewidths=0.5,colors='k')
             plt.clabel(CS_ra, fontsize=9, inline=1)
             CS_dec = plt.contour(xi,yi,zi_dec,contour_levels_dec,linewidths=0.5,colors='k')
@@ -572,9 +576,6 @@ def clouds(params):
             plt.xlim([0,2897])
             plt.ylim([0,1935])
             plt.title(runNumber)
-            #cb = plt.colorbar()
-            #cb.set_label('minst')
-            #cb.set_label('(minst - m) - m0')
             plt.show()
             plt.savefig(plotName,dpi=200)
             plt.close('all')
@@ -803,6 +804,7 @@ def getVariableStars():
 
 def m_func(x_4d, alpha, beta, gamma, m_0):
     m_corr = x_4d[:,0] - (alpha + beta*x_4d[:,1])*x_4d[:,2] - gamma * x_4d[:,3] + m_0
+    #m_corr = x_4d[:,0] - (alpha + beta*x_4d[:,1])*x_4d[:,2] - gamma * 0 + m_0
     return m_corr
 
 def combinefisheye(params):
@@ -885,9 +887,9 @@ def combinefisheye(params):
         data_all = data_all[indexes,:]
         magnitudes = data_all[:,10] - data_all[:,17]
 
-        indexes = np.where(data_all[:,18] < 0.1)[0]
-        data_all = data_all[indexes,:]
-        magnitudes = data_all[:,10] - data_all[:,17]
+        #indexes = np.where(data_all[:,18] < 0.1)[0]
+        #data_all = data_all[indexes,:]
+        #magnitudes = data_all[:,10] - data_all[:,17]
         #magnitudes = data_all[:,10]
         #magnitudes = data_all[:,0] 
 
@@ -1004,6 +1006,15 @@ def combinefisheye(params):
         plt.plot(data_all_cut[:,21],magnitudes_cut,'*')
         plt.xlabel('run numbers')
         plt.ylabel('minst - m')
+        plt.show()
+        plt.savefig(plotName,dpi=200)
+        plt.close('all')
+
+        plotName = os.path.join(plotDir,'mag_time_error_max.png')
+        plt.errorbar(data_all_cut[:,21],magnitudes_cut,yerr=data_all_cut[:,18])
+        plt.xlabel('run numbers')
+        plt.ylabel('minst - m')
+        plt.ylim([11.5,14.0])
         plt.show()
         plt.savefig(plotName,dpi=200)
         plt.close('all')
@@ -1186,7 +1197,7 @@ def combinefisheye(params):
         m_0 = -4
         p0 = (alpha,beta,gamma,m_0)
 
-        x_4d = np.vstack((m_inst,b_minus_v, airmass, f_of_r)).T
+        x_4d = np.vstack((m_inst,b_minus_v, airmass-airmass, f_of_r)).T
         popt, pcov = curve_fit(m_func, x_4d, ydata, p0=p0)
         y_fit = m_func(x_4d, popt[0], popt[1], popt[2], popt[3])
 
@@ -1479,10 +1490,13 @@ def fisheye(params):
             if runNumber > params["maxframes"]:
                 continue
 
-            #if not runNumber == 267:
+            #if not runNumber == 300:
             #    continue
 
             fileprefix = file.replace(".fits","")
+            outputfile = file.replace("fits","fish")
+            if os.path.isfile(outputfile):
+                continue
 
             fitshdr_command = "fitshdr %s"%(file)
             p = subprocess.Popen(fitshdr_command.split(" "),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -1506,8 +1520,6 @@ def fisheye(params):
             imstats_file = "./imstats_fish/imstats_fish_%s_%s.sh"%(type,lens_type)
             fisheye_command = "%s %s"%(imstats_file,fileprefix)
             os.system(fisheye_command)
-
-            outputfile = file.replace("fits","fish")
 
             if not os.path.isfile(outputfile):
                 continue

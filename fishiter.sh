@@ -43,12 +43,13 @@ FRAT=0.0              # Vignetting correction f-ratio (0 means no correction)
 #PARITY=1
 #MED=1.054
 
-echo HA = $HA
-echo DEC = $DEC
-echo AZ = $AZ
-echo SCALE = $SCALE
-echo PARITY = $PARITY
-echo MED = $MED
+echo $HA
+echo "HA = " $HA
+echo "DEC = " $DEC
+echo "AZ = " $AZ
+echo "SCALE = " $SCALE
+echo "PARITY = " $PARITY
+echo "MED = " $MED
 
 #CX=1420               # Observation image center [default, can be overridden]
 #CY=975                # Observation image center [default]
