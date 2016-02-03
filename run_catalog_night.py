@@ -21,15 +21,20 @@ import numpy as np
 
 if __name__=="__main__":
 
-    FITSfolder = "/lsst/home/coughlin/allsky/data" 
+    FITSfolder = "/scratch/coughlin/allsky/data" 
     folders = glob.glob(os.path.join(FITSfolder,"ut*"))
     folders = sorted(folders)
 
-    flags = "--doPhotodiode"
+    flags = "--doCombineNight"
 
     for folder in folders:
 
         folderName = folder.split("/")[-1]
+
+        file = "/lsst/home/coughlin/git-repo/fisheye/catalognight/M/%s.txt"%folderName
+        if os.path.isfile(file):
+            continue
+
         fisheye_command = "python run_fisheye.py -o %s %s"%(folderName,flags)
         os.system(fisheye_command)
 

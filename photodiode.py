@@ -54,7 +54,7 @@ def photodiode(params):
     mjdobss = []
     vals = []
 
-    datestr = params["folderName"].replace("ut","")
+    datestr = params["outputFolder"].replace("ut","")
     year = int("20%s"%datestr[4:6])
     day = int(datestr[2:4]) 
     month = int(datestr[0:2])
@@ -97,7 +97,7 @@ def photodiode(params):
         plt.plot(mjdobss,vals[index,:],'b*')
         plt.xlabel('time')
         plt.ylabel(filter)
-        plt.title(params["folderName"])
+        plt.title(params["outputFolder"])
         plt.show()
         plt.savefig(plotName,dpi=200)
         plt.close('all')
@@ -107,9 +107,16 @@ def photodiode(params):
             f.write("%.10f %.10e\n"%(mjdobs,sky))
         f.close()
 
+        if filter == "R":
+            scale = -2.27952e+02
+        elif filter == "Z":
+            scale = -5.68761e+01
+        elif filter == "Y":
+            scale = -5.76147e+01     
+
         data[filter] = {}
         data[filter]["mjdobs"] = mjdobss
-        data[filter]["skybrightness"] = vals[index,:]
+        data[filter]["skybrightness"] = scale * vals[index,:]
 
     f = open(os.path.join(params["photodiodepath"],'photodiode.txt'),'w')
     for mjdobs,r,z,y in zip(data["R"]["mjdobs"],data["R"]["skybrightness"],data["Z"]["skybrightness"],data["Y"]["skybrightness"]):
@@ -121,7 +128,7 @@ def photodiode(params):
     plt.plot(data["Z"]["mjdobs"],data["Z"]["skybrightness"],'g*',label='Z')
     plt.plot(data["Y"]["mjdobs"],data["Y"]["skybrightness"],'b*',label='Y')
     plt.xlabel('time')
-    plt.title(params["folderName"])
+    plt.title(params["outputFolder"])
     plt.legend()
     plt.show()
     plt.savefig(plotName,dpi=200)

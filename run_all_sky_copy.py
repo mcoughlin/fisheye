@@ -21,15 +21,20 @@ import numpy as np
 
 if __name__=="__main__":
 
-    FITSfolder = "/lsst/home/coughlin/allsky/data" 
+    FITSfolder = "/scratch/coughlin/allsky/data" 
     folders = glob.glob(os.path.join(FITSfolder,"ut*"))
     folders = sorted(folders)
 
-    flags = "--doPhotodiode"
+    outFolder = 
+    skybrightnessfiles = []
 
     for folder in folders:
-
+        filename = os.path.join(folder,'skybrightnessplots/skybrightness.txt')
         folderName = folder.split("/")[-1]
-        fisheye_command = "python run_fisheye.py -o %s %s"%(folderName,flags)
-        os.system(fisheye_command)
+
+        print filename
+        print folderName
+        skybrightnessfiles.append(filename)
+
+
 

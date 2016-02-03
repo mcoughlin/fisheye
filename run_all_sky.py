@@ -21,11 +21,11 @@ import numpy as np
 
 if __name__=="__main__":
 
-    FITSfolder = "/lsst/home/coughlin/allsky/data" 
+    FITSfolder = "/home/coughlin/allsky/data/FITS" 
     folders = glob.glob(os.path.join(FITSfolder,"ut*"))
     folders = sorted(folders)
 
-    flags = "--doPhotodiode"
+    flags = "--doSkyBrightness"
 
     for folder in folders:
 

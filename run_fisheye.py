@@ -33,14 +33,18 @@ def parse_commandline():
     parser.add_option("--doMakeFits",  action="store_true", default=False)
     parser.add_option("--doMakeMovie",  action="store_true", default=False)
     parser.add_option("--doClouds",  action="store_true", default=False)
+    parser.add_option("--doCombineClouds",  action="store_true", default=False)
     parser.add_option("--doFisheye",  action="store_true", default=False)
     parser.add_option("--doCombineFisheye",  action="store_true", default=False)
+    parser.add_option("--doCombineNight",  action="store_true", default=False)
     parser.add_option("--doPhotometry",  action="store_true", default=False)
     parser.add_option("--doSkyBrightness",  action="store_true", default=False)
     parser.add_option("--doXY2Sky",  action="store_true", default=False)
     parser.add_option("--doHealpix",  action="store_true", default=False)
     parser.add_option("--doPhotodiode",  action="store_true", default=False)
     parser.add_option("--doSBPD",  action="store_true", default=False)
+    parser.add_option("--doAirplane",  action="store_true", default=False)
+    parser.add_option("--doESOCompare",  action="store_true", default=False)
 
     opts, args = parser.parse_args()
 
@@ -52,8 +56,14 @@ def initialize(params):
     params["datadisk"]='/lsst/all-sky'
     params["fitsdisk"]='/lsst/all-sky/FITS'    
     params["fitsdisk"]='/lsst/home/coughlin/allsky/data/FITS'
+    params["fitsdisk"]='/scratch/%s/allsky/data/FITS'%params["user"]
+    params["codepath"]='/lsst/home/coughlin/git-repo/fisheye'
+    params["catalogpath"] = "/lsst/home/coughlin/git-repo/fisheye/catalog"
+    params["catalognightpath"] = "/lsst/home/coughlin/git-repo/fisheye/catalognight"
+
     params["photodiodedisk"]='/lsst/home/coughlin/allsky/data/PD'
     params["dirpath"]='/lsst/home/%s/allsky/data'%params["user"]
+    params["dirpath"]='/scratch/%s/allsky/data'%params["user"]
     params["dirname"]=params["outputFolder"]
 
     # create tonight's directory
@@ -112,6 +122,14 @@ def initialize(params):
     if not os.path.isdir(params["sbpdpath"]):
         os.mkdir(params["sbpdpath"])
 
+    params["airplanepath"]=os.path.join(params["dirpathname"],"airplaneplots")
+    if not os.path.isdir(params["airplanepath"]):
+        os.mkdir(params["airplanepath"])
+
+    params["esocomparepath"]=os.path.join(params["dirpathname"],"esocompareplots")
+    if not os.path.isdir(params["esocomparepath"]):
+        os.mkdir(params["esocomparepath"])
+
     # prefix for images, gets framecounter.cr2 appended
     params["imageprefix"]="%s."%params["dirname"]
     # interval after end of last image before starting next one, in seconds
@@ -150,6 +168,8 @@ if __name__=="__main__":
     params["doMakeFits"] = opts.doMakeFits
     # Do analysis where we look for clouds
     params["doClouds"] = opts.doClouds
+    # Do combine clouds
+    params["doCombineClouds"] = opts.doCombineClouds
     # Calculate sky brightness
     params["doSkyBrightness"] = opts.doSkyBrightness
     # Do analysis where we convert x,y to RA/Dec
@@ -158,6 +178,8 @@ if __name__=="__main__":
     params["doFisheye"] = opts.doFisheye
     # Track stars across the night
     params["doCombineFisheye"] = opts.doCombineFisheye
+    # Catalog the night
+    params["doCombineNight"] = opts.doCombineNight
     # Create movie of fits images
     params["doMakeMovie"] = opts.doMakeMovie
     # Run tphot / source extractor on the images
@@ -168,6 +190,10 @@ if __name__=="__main__":
     params["doPhotodiode"] = opts.doPhotodiode
     # Combine all-sky camera / photodiode data
     params["doSBPD"] = opts.doSBPD
+    # Detect airplanes in data
+    params["doAirplane"] = opts.doAirplane
+    # ESO compare with data
+    params["doESOCompare"] = opts.doESOCompare
 
     params = initialize(params)
 
@@ -184,8 +210,12 @@ if __name__=="__main__":
         fisheye.skybrightness(params)
     if params["doCombineFisheye"]:
         fisheye.combinefisheye(params)
+    if params["doCombineNight"]:
+        fisheye.combinenight(params)
     if params["doClouds"]:
         fisheye.clouds(params)
+    if params["doCombineClouds"]:
+        fisheye.combineclouds(params)
     if params["doXY2Sky"]:
         fisheye.xy2sky(params)
     if params["doHealpix"]:
@@ -194,3 +224,7 @@ if __name__=="__main__":
         photodiode.photodiode(params)
     if params["doSBPD"]:
         photodiode.sbpd(params)
+    if params["doAirplane"]:
+        fisheye.airplane(params)
+    if params["doESOCompare"]:
+        fisheye.esocompare(params)
