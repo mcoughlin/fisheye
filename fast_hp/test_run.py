@@ -37,7 +37,8 @@ if __name__ == '__main__':
 		if not os.path.exists(os.path.join(output_dir, night_dir)):
 			os.makedirs(os.path.join(output_dir, night_dir))
 		outfile = open(os.path.join(output_dir, night_dir, 'healmaps.dat'), 'w')
-		print >>outfile, '# hpid (nside=%i), R, G, B, airmass, mjd' % nside
+		# I hate to leave off the header, but it makes it easier to slurp into sqlite
+		# print >>outfile, '# hpid (nside=%i), R, G, B, airmass, mjd' % nside
 		for filename in zipped_files:
 			# copy and unzip the file
 			tempfile = os.path.split(filename)[-1]
@@ -64,12 +65,14 @@ if __name__ == '__main__':
 					hpmap.fill(hp.UNSEEN)
 				hpmaps[filtername] = hpmap
 		
-			maskcheck = np.mean(np.array([np.median(val) for val in hpmaps.values()]))
-			if maskcheck != hp.UNSEEN:
+			maskcheck = np.unique(np.array([np.median(val) for val in hpmaps.values()]))
+			if np.max(maskcheck) != hp.UNSEEN:
 				good = np.where(hpAlt >= 0.)[0]
 				for indx in good:
-					print >>outfile, '%i, %f, %f, %f, %f, %f' % (hpindex[indx], hpmaps['R'][indx], hpmaps['G'][indx],
-					                                             hpmaps['B'][indx],airmass[indx], mjd)
+					# Skip if everythin in the pixel is masked
+					if ((hpmaps['R'][indx] != hp.UNSEEN) & (hpmaps['G'][indx] != hp.UNSEEN) & (hpmaps['B'][indx] != hp.UNSEEN)): 
+						print >>outfile, '%i, %f, %f, %f, %f, %f' % (hpindex[indx], hpmaps['R'][indx], hpmaps['G'][indx],
+					                                             	 hpmaps['B'][indx],airmass[indx], mjd)
 			# delete the temp files that were created
 			hdulist.close()
 			os.unlink(crfile)
