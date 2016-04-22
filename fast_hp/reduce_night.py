@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import glob
 import numpy as np
 import healpy as hp
@@ -9,11 +10,17 @@ import os
 import subprocess
 from shutil import copyfile
 import matplotlib.pylab as plt
+import argparse
 
 
 
 if __name__ == '__main__':
-	
+
+
+	parser = argparse.ArgumentParser(description="convert a night to a healpix map")
+	parser.add_argument("night", type=str, help="directory name")
+	args = parser.parse_args()
+	night_dirs = [args.night]
 
 	altaz = np.load('/home/yoachim/gitrepos/fisheye/fast_hp/coordims.npz')
 	alt = altaz['alt'].copy()
@@ -31,7 +38,7 @@ if __name__ == '__main__':
 	hpindex = np.arange(hp.nside2npix(nside))
 	hpra, hpdec = _hpid2RaDec(nside, hpindex)
 	filters = {'R':0, 'G':1,'B':2}
-	night_dirs = ['ut042116']#['ut012916']
+	
 	base_dir = '/lsst/all-sky'
 	# Don't bother with frames that are above this median counts
 	countLimit = 13000.
