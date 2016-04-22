@@ -15,7 +15,7 @@ import matplotlib.pylab as plt
 if __name__ == '__main__':
 	
 
-	altaz = np.load('coordims.npz')
+	altaz = np.load('~/gitrepos/fisheye/fast_hp/coordims.npz')
 	alt = altaz['alt'].copy()
 	az = altaz['az'].copy()
 	altaz.close()
@@ -31,12 +31,13 @@ if __name__ == '__main__':
 	hpindex = np.arange(hp.nside2npix(nside))
 	hpra, hpdec = _hpid2RaDec(nside, hpindex)
 	filters = {'R':0, 'G':1,'B':2}
-	night_dirs = ['ut012716']#['ut012916']
+	night_dirs = ['ut042116']#['ut012916']
+	base_dir = '/lsst/all-sky'
 	# Don't bother with frames that are above this median counts
 	countLimit = 13000.
 
 	for night_dir in night_dirs:
-		zipped_files = glob.glob(os.path.join(night_dir, '*.long*.gz'))
+		zipped_files = glob.glob(os.path.join(base_dir, night_dir, '*.long*.gz'))
 		if not os.path.exists(os.path.join(output_dir, night_dir)):
 			os.makedirs(os.path.join(output_dir, night_dir))
 		outfile = open(os.path.join(output_dir, night_dir, 'healmaps.dat'), 'w')

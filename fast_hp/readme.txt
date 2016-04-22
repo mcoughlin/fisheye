@@ -6,7 +6,7 @@ CREATE TABLE medskybrightness (hpindex INT, R REAL, G REAL, B REAL,
  airmass REAL, mjd REAL);
 
 .separator ","
-.import output/ut012916/healmaps.dat medskybrightness
+.import output/ut012716/healmaps.dat medskybrightness
 
 
 
