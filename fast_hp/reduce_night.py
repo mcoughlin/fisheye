@@ -15,7 +15,7 @@ import matplotlib.pylab as plt
 if __name__ == '__main__':
 	
 
-	altaz = np.load('~/gitrepos/fisheye/fast_hp/coordims.npz')
+	altaz = np.load('/home/yoachim/gitrepos/fisheye/fast_hp/coordims.npz')
 	alt = altaz['alt'].copy()
 	az = altaz['az'].copy()
 	altaz.close()
