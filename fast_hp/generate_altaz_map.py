@@ -1,6 +1,4 @@
 import numpy as np
-import healpy as hp
-from lsst.sims.utils import healbin
 import ephem
 from lsst.sims.skybrightness import stupidFast_RaDec2AltAz
 from lsst.sims.utils import Site
@@ -15,10 +13,10 @@ def make_altaz():
     """
 
     # Coordinates are hour angle and declination.
-    coords = np.genfromtxt('ut012716.0100.long.M.xxyy',
+    coords = np.genfromtxt('coord_im/ut012716.0100.long.M.xxyy',
                            dtype=[int,int,float,float])
 
-    hdulist = fits.open('ut012716.0100.long.M.fits')
+    hdulist = fits.open('coord_im/ut012716.0100.long.M.fits')
 
     image = hdulist[0].data
     xim = np.zeros(image.shape, dtype=int)-666
