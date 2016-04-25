@@ -7,7 +7,7 @@ sqlite3  all_sky_sqlite.db "CREATE TABLE medskybrightness (hpindex INT, R REAL, 
 
 for %%f in $( ls -d output/01*16 ); do 
     echo %%f
-    sqlite3 -separator ","  all_sky_sqlite.db ".import output/%%f/healmaps.dat medskybrighntess")
+    sqlite3 -separator ","  all_sky_sqlite.db ".import output/%%f/healmaps.dat medskybrighntess"
 done
 
 sqlite3  all_sky_sqlite.db "CREATE INDEX hpindex_index on medskybrightness (hpindex);"
