@@ -6,7 +6,7 @@
 
 # ls -d /lsst/all-sky/ut01*16 | sed 's/.*\///' | xargs -I'{}' ~/gitrepos/fisheye/fast_hp/reduce_night.py '{}'
 
-lsst
+source eups-setups.sh
 setup sims_skybrightness
 
 ls -d /lsst/all-sky/ut$1*$2 | sed 's/.*\///' | xargs -I'{}' ~/gitrepos/fisheye/fast_hp/reduce_night.\
