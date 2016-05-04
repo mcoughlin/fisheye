@@ -1,4 +1,4 @@
-!#/bin/bash
+!#/bin/sh
 
 # to run:
 # source '/home/yoachim/anaconda2/bin/eups-setups.sh'

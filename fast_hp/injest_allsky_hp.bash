@@ -5,7 +5,7 @@
 rm all_sky_sqlite.db
 sqlite3  all_sky_sqlite.db "CREATE TABLE medskybrightness (hpindex INT, R REAL, G REAL, B REAL, airmass REAL, mjd REAL);"
 
-for i in $( ls -d output/ut01*16 ); do 
+for i in $( ls -d output/ut* ); do 
     echo $i
     sqlite3 -separator ","  all_sky_sqlite.db ".import $i/healmaps.dat medskybrightness"
 done
